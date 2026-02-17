@@ -1,0 +1,116 @@
+<div class="login-container">
+
+<div class="left-side">
+    <img src="/logo.png" class="logo" alt="logo" />
+
+</div>
+
+
+
+<!-- RIGHT SIDE -->
+<div class="right-side">
+
+    <h1 class="welcome-text">Welcome.</h1>
+
+    <div class="login-box">
+
+        <div class="input-wrapper">
+            <span class="icon">
+                <!-- USER SVG -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+                  </svg>
+            </span>
+
+            <input type="text" placeholder="Korisničko ime" 
+       class="input-field" [(ngModel)]="username" />
+        </div>
+
+        <div class="input-wrapper">
+            <span class="icon">
+                <!-- USER SVG -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+                  </svg>
+            </span>
+
+            
+<input type="text" placeholder="Ime" 
+class="input-field" [(ngModel)]="ime" />
+        </div>
+
+        <div class="input-wrapper">
+            <span class="icon">
+                <!-- USER SVG -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="8" r="4"/>
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+                  </svg>
+            </span>
+
+            <input type="text" placeholder="Prezime" 
+            class="input-field" [(ngModel)]="prezime" />
+        </div>
+
+
+        <div class="input-wrapper">
+            <span class="icon">
+                <!-- LOCK SVG -->
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12 17a2 2 0 002-2 2 2 0 10-4 0 2 2 0 002 2zm6-8h-1V7a5 5 0 00-10 0v2H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2zm-3 0H9V7a3 3 0 016 0v2z" />
+                </svg>
+            </span>
+
+            <input type="password" placeholder="Lozinka" 
+            class="input-field" [(ngModel)]="password" />
+        </div>
+
+        <div class="input-wrapper">
+            <span class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#555">
+                    <path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24
+                    1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1
+                    C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1
+                    0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                  </svg>
+                  
+            </span>
+
+            <input type="text" placeholder="Kontakt telefon" 
+            class="input-field" [(ngModel)]="telefon" />
+        </div>
+
+        <div class="input-wrapper">
+            <span class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#555">
+                    <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                  </svg>
+                  
+            </span>
+
+            <input type="text" placeholder="Email adresa" 
+       class="input-field" [(ngModel)]="email" />
+        </div>
+
+        <button class="login-button" (click)="registruj()">
+            Registruj se
+        </button>
+        <p class="error-message" *ngIf="errorMessage">
+            {{ errorMessage }}
+          </p>
+
+    </div>
+
+    <p class="register-text">
+        Već imate nalog?
+        <span class="register-link" routerLink="/login">
+            Prijavite se.
+        </span>
+    </p>
+
+</div>
+
+</div>

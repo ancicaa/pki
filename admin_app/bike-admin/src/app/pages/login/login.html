@@ -1,0 +1,72 @@
+<div class="login-container">
+
+    <!-- LEFT SIDE -->
+    <div class="left-side">
+        <img src="/logo.png" class="logo" alt="logo" />
+
+      </div>
+      
+      
+  
+    <!-- RIGHT SIDE -->
+    <div class="right-side">
+  
+      <h1 class="welcome-text">Welcome.</h1>
+  
+      <div class="login-box">
+  
+        <div class="input-wrapper">
+            <span class="icon">
+              <!-- USER SVG -->
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+              </svg>
+            </span>
+          
+            <input
+              type="text"
+              placeholder="Korisničko ime"
+              class="input-field"
+              [(ngModel)]="username"
+            />
+          </div>
+          
+          
+          <div class="input-wrapper">
+            <span class="icon">
+              <!-- LOCK SVG -->
+              <svg viewBox="0 0 24 24">
+                <path d="M12 17a2 2 0 002-2 2 2 0 10-4 0 2 2 0 002 2zm6-8h-1V7a5 5 0 00-10 0v2H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2zm-3 0H9V7a3 3 0 016 0v2z"/>
+              </svg>
+            </span>
+          
+            <input
+              type="password"
+              placeholder="Lozinka"
+              class="input-field"
+              [(ngModel)]="password"
+            />
+          </div>
+          
+  
+        <button class="login-button" (click)="goToHome()">
+          Prijavi se
+        </button>
+        <p class="error-message" *ngIf="errorMessage">
+            {{ errorMessage }}
+          </p>
+  
+      </div>
+  
+      <p class="register-text">
+        Nemate nalog?
+        <span class="register-link" routerLink="/registracija">
+          Registrujte se.
+        </span>
+      </p>
+      
+    </div>
+  
+  </div>
+  

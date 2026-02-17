@@ -1,0 +1,481 @@
+<div class="layout">
+
+    <aside class="sidebar">
+  
+      <div class="sidebar-header">
+        <img src="/images/logo_header.png" class="logo" alt="logo">
+        <h2 style="margin-top:20px;">Admin panel</h2>
+      </div>
+  
+      <nav class="menu">
+        <button class="menu-item" [class.active]="active==='bicikla'" (click)="setActive('bicikla')">
+          <mat-icon>directions_bike</mat-icon>
+          Bicikla
+        </button>
+  
+        <button class="menu-item" [class.active]="active==='iznajmljivanja'" (click)="setActive('iznajmljivanja')">
+          <mat-icon>calendar_month</mat-icon>
+          Iznajmljivanja
+        </button>
+  
+        <button class="menu-item" [class.active]="active==='problemi'" (click)="setActive('problemi')">
+          <mat-icon>warning</mat-icon>
+          Prijavljeni problemi
+        </button>
+
+      </nav>
+      <div class="profile">
+        <button class="menu-item" [class.active]="active==='profil'" (click)="setActive('profil')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="30" height="30">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+          </svg>
+          Moj profil
+        </button>
+      </div>
+    </aside>
+    
+  
+    <div class="main">
+      <header class="header">
+        <div></div>
+  
+        <div class="header-right">
+          <span>Administrator</span>
+          <span class="logout" (click)="logout()">
+            <mat-icon>logout</mat-icon>
+          </span>
+        </div>
+      </header>
+  
+      <div class="content">
+       <div class="card" [class.no-card]="active === 'profil'">
+
+  
+          @switch (active) {
+  
+            @case ('bicikla') {
+  
+              <div class="bikes-header">
+                <h2 class="bikes-title">Bicikla</h2>
+                <button class="add-btn" (click)="openAddBike()" aria-label="Dodaj bicikl">+</button>
+
+              </div>
+  
+              <div class="bikes-body">
+                <div class="table-wrap">
+                  <table class="bikes-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Tip</th>
+                        <th>Cena po h</th>
+                        <th>Status</th>
+                        <th class="actions-th"></th>
+                        <th class="actions-th"></th>
+                      </tr>
+                    </thead>
+  
+                    <tbody>
+                        @for (b of bikes; track b.id) {
+                          <tr>
+                            <td> # {{ b.id }}</td>
+                            <td>{{ b.tip }}</td>
+                            <td>{{ b.cena }} RSD</td>
+                      
+                            <td>
+                              @if (editingStatusId === b.id) {
+                                <select class="status-select"
+                                        [(ngModel)]="b.status"
+                                        (change)="saveStatus(b)">
+                                  @for (s of statusOptions; track s) {
+                                    <option [value]="s">{{ s }}</option>
+                                  }
+                                </select>
+                              } @else {
+                                {{ b.status }}
+                              }
+                            </td>
+                      
+                            <td class="action-td">
+                              <button class="pill" (click)="editStatus(b)">Izmeni status</button>
+                            </td>
+                      
+                            <td class="action-td">
+                              <button class="pill" (click)="editBike(b)">Izmeni bicikl</button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                  </table>
+                </div>
+              </div>
+
+              @if (isAddBikeOpen) {
+                <div class="modal-backdrop" (click)="closeAddBike()">
+                  <div class="modal" (click)="$event.stopPropagation()">
+              
+                    <button class="modal-close" (click)="closeAddBike()">×</button>
+              
+                    <h3 class="modal-title">Dodaj novi bicikl</h3>
+              
+                    <div class="modal-form">
+              
+                        <div class="row">
+                            <label>ID</label>
+                            <input class="modal-input modal-text"
+                                   [(ngModel)]="newBike.id"
+                                   readonly
+                                   aria-label="ID" />
+                          </div>
+                          
+                          <div class="row">
+                            <label>Tip</label>
+                            <select class="modal-input modal-select"
+                                    [(ngModel)]="newBike.tip">
+                              <option value="" disabled>Izaberi tip</option>
+                              @for (type of bikeTypes; track type) {
+                                <option [value]="type">{{ type }}</option>
+                              }
+                            </select>
+                          </div>
+                          
+                          <div class="row">
+                            <label>Cena po satu</label>
+                            <input class="modal-input modal-text"
+                                   type="number"
+                                   [(ngModel)]="newBike.cena"
+                                   placeholder="12" />
+                          </div>
+                          
+                          <div class="row">
+                            <label>Status</label>
+                            <select class="modal-input modal-select"
+                                    [(ngModel)]="newBike.status">
+                              <option value="Dostupan">Dostupan</option>
+                              <option value="Iznajmljen">Iznajmljen</option>
+                              <option value="Neispravan">Neispravan</option>
+                              <option value="Na održavanju">Na održavanju</option>
+                            </select>
+                          </div>
+                          
+              
+                    </div>
+              
+                    <button class="modal-save" (click)="saveBike()">Sačuvaj</button>
+                  </div>
+                </div>
+              }
+
+              @if (isEditBikeOpen && editingBike) {
+                <div class="modal-backdrop" (click)="closeEditBike()">
+                  <div class="modal" (click)="$event.stopPropagation()">
+              
+                    <button class="modal-close" (click)="closeEditBike()">×</button>
+              
+                    <h3 class="modal-title">Informacije u vezi bicikla</h3>
+              
+                    <div class="modal-form">
+              
+                      <div class="row">
+                        <label>ID</label>
+                        <input class="modal-input modal-text"
+                               [value]="'#' + editingBike.id"
+                               readonly />
+                      </div>
+              
+                      <div class="row">
+                        <label>Tip</label>
+                        <select class="modal-input modal-select"
+                                [(ngModel)]="editingBike.tip">
+                          <option *ngFor="let type of bikeTypes" [value]="type">{{ type }}</option>
+                        </select>
+                      </div>
+              
+                      <div class="row">
+                        <label>Cena po satu</label>
+                        <input class="modal-input modal-text"
+                               type="number"
+                               [(ngModel)]="editingBike.cena"
+                               placeholder="12" />
+                      </div>
+              
+                      <div class="row">
+                        <label>Status</label>
+                        <select class="modal-input modal-select"
+                                [(ngModel)]="editingBike.status">
+                          <option value="Dostupan">Dostupan</option>
+                          <option value="Iznajmljen">Iznajmljen</option>
+                          <option value="Neispravan">Neispravan</option>
+                          <option value="Na održavanju">Na održavanju</option>
+                        </select>
+                      </div>
+              
+                    </div>
+              
+                    <button class="modal-save" (click)="saveEditBike()">Sačuvaj</button>
+                  </div>
+                </div>
+              }
+              
+  
+            }
+  
+            @case ('iznajmljivanja') {
+                <div class="iznajmljivanja-header">
+                    <h2 class="iznajmljivanja-title">Iznajmljivanja</h2>
+                  </div>
+      
+                  <div class="bikes-body">
+                    <div class="table-wrap">
+                      <table class="bikes-table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Korisnik</th>
+                            <th>Datum</th>
+                            <th>Vreme</th>
+                            <th>Cena</th>
+                          </tr>
+                        </thead>
+      
+                        <tbody>
+                          @for (i of iznajmljivanja; track i.id) {
+                            <tr (click)="openIznajmljivanje(i)" class="clickable-row">
+                              <td>{{ i.id }}</td>
+                              <td>{{ i.korisnik }}</td>
+                              <td>{{ i.datum }} </td>
+                              <td>{{ i.vreme }}</td>
+                              <td>{{ i.cena }} RSD</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                      @if (isIznajmljivanjeOpen && selectedIznajmljivanje) {
+
+                        <div class="modal-backdrop" (click)="closeIznajmljivanje()">
+                          <div class="modal" (click)="$event.stopPropagation()">
+                      
+                            <button class="modal-close" (click)="closeIznajmljivanje()">×</button>
+                      
+                            <h3 class="modal-title">Iznajmljivanje</h3>
+                      
+                            <div class="details">
+                      
+                              <p><strong>ID:</strong> {{ selectedIznajmljivanje.id }}</p>
+                              <p><strong>Korisnik:</strong> {{ selectedIznajmljivanje.korisnik }}</p>
+                              <p><strong>Datum i vreme:</strong> 
+                                {{ selectedIznajmljivanje.datum }} {{ selectedIznajmljivanje.vreme }}
+                              </p>
+                              <p><strong>Ukupno minuta:</strong> {{ selectedIznajmljivanje.minuta }}</p>
+                              <p><strong>Tip bicikla:</strong> {{ selectedIznajmljivanje.tip }}</p>
+                              <p><strong>Cena po minutu:</strong> {{ selectedIznajmljivanje.cenaPoMinutu }} RSD</p>
+                              <p><strong>Cena ukupno:</strong> {{ selectedIznajmljivanje.cena }} RSD</p>
+                      
+                              <p><strong>Fotografija:</strong></p>
+                              <img [src]="selectedIznajmljivanje.slika" class="rental-photo" />
+                      
+                            </div>
+                      
+                          </div>
+                        </div>
+                      
+                      }
+                      
+                    </div>
+                  </div>
+            }
+  
+            @case ('problemi') {
+                <div class="problemi-header">
+                  <h2 class="problemi-title">Prijavljeni problemi</h2>
+                </div>
+              
+                <div class="bikes-body">
+                  <div class="table-wrap">
+                    <table class="bikes-table">
+                      <thead>
+                        <tr>
+                          <th>Datum</th>
+                          <th>Korisnik</th>
+                          <th>Bicikl</th>
+                          <th>Opis problema</th>
+                          <th>Fotografija</th>
+                          <th>Status</th>
+                          <th class="actions-th"></th>
+                        </tr>
+                      </thead>
+              
+                      <tbody>
+                        @for (p of prijavljeni_problemi; track p.id) {
+                          <tr>
+                            <td>{{ p.datum }}</td>
+                            <td>{{ p.korisnik }}</td>
+                            <td>{{ p.bicikl }}</td>
+                            <td>{{ p.opis }}</td>
+                            <td class="photo-cell">
+                              <img [src]="p.fotografija" alt="problem foto" class="problem-photo" />
+                            </td>
+              
+                            <td>
+                              @if (editingProblemId === p.id) {
+                                <select class="status-select"
+                                        [(ngModel)]="p.status"
+                                        (change)="saveProblemStatus(p)">
+                                  @for (s of problemStatusOptions; track s) {
+                                    <option [value]="s">{{ s }}</option>
+                                  }
+                                </select>
+                              } @else {
+                                {{ p.status }}
+                              }
+                            </td>
+              
+                            <td class="action-td">
+                              <button class="pill" (click)="editProblemStatus(p)">Izmeni status</button>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              }
+
+            @case ('profil') {
+
+                <div class="profile-page">
+                  <h2 class="moj-profil-title">Moj profil</h2>
+              
+                  <div class="avatar">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 12c2.7 0 5-2.3 5-5s-2.3-5-5-5-5 2.3-5 5 2.3 5 5 5zm0 2c-3.3 0-10 1.7-10 5v3h20v-3c0-3.3-6.7-5-10-5z"/>
+                    </svg>
+                  </div>
+              
+                  <div class="profile-grid">
+              
+                    <div class="profile-form">
+              
+                      <!-- Username -->
+                      <div class="input-wrapper" [class.editing]="isEditingProfile">
+                        <span class="icon">
+                          <!-- user -->
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="12" cy="8" r="4"/>
+                            <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+                          </svg>                        </span>
+                        <input class="input-field"
+                               [(ngModel)]="profile.username"
+                               [readonly]="!isEditingProfile" />
+                      </div>
+              
+                      <!-- Ime -->
+                      <div class="input-wrapper" [class.editing]="isEditingProfile">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+                              </svg>                        </span>
+                        <input class="input-field"
+                               [(ngModel)]="profile.ime"
+                               [readonly]="!isEditingProfile" />
+                      </div>
+              
+                      <!-- Prezime -->
+                      <div class="input-wrapper" [class.editing]="isEditingProfile">
+                        <span class="icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="8" r="4"/>
+                                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-linecap="round"/>
+                              </svg>                        </span>
+                        <input class="input-field"
+                               [(ngModel)]="profile.prezime"
+                               [readonly]="!isEditingProfile" />
+                      </div>
+              
+                      <!-- Telefon -->
+                      <div class="input-wrapper" [class.editing]="isEditingProfile">
+                        <span class="icon">
+                          <!-- phone -->
+                          <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.07 21 3 13.93 3 5c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.24.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        </span>
+                        <input class="input-field"
+                               [(ngModel)]="profile.telefon"
+                               [readonly]="!isEditingProfile" />
+                      </div>
+              
+                      <!-- Email -->
+                      <div class="input-wrapper" [class.editing]="isEditingProfile">
+                        <span class="icon">
+                          <!-- email -->
+                          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </span>
+                        <input class="input-field"
+                               [(ngModel)]="profile.email"
+                               [readonly]="!isEditingProfile" />
+                      </div>
+              
+                      <button class="profile-btn" (click)="toggleEditProfile()">
+                        {{ isEditingProfile ? 'Sačuvaj' : 'Izmeni podatke' }}
+                      </button>
+                    </div>
+              
+                    <button class="change-pass" (click)="changePassword()">
+                      <span class="lock-icon">
+                        <svg viewBox="0 0 24 24"><path d="M12 17a2 2 0 002-2 2 2 0 10-4 0 2 2 0 002 2zm6-8h-1V7a5 5 0 00-10 0v2H6a2 2 0 00-2 2v9a2 2 0 002 2h12a2 2 0 002-2v-9a2 2 0 00-2-2zm-3 0H9V7a3 3 0 016 0v2z"/></svg>
+                      </span>
+                      Promeni lozinku
+                    </button>
+              
+                  </div>
+                </div>
+              
+                @if (isChangePassOpen) {
+                    <div class="modal-backdrop" (click)="closeChangePass()">
+                      <div class="modal-change-pass" (click)="$event.stopPropagation()">
+                  
+                        <button class="modal-close" (click)="closeChangePass()">×</button>
+                  
+                        <h3 class="modal-title">Promeni lozinku</h3>
+                  
+                        <div class="modal-form">
+                  
+                          <div class="pass-row">
+                            <label>Stara lozinka:</label>
+                            <input class="pass-input" type="password" [(ngModel)]="oldPassword" />
+                          </div>
+                  
+                          <div class="pass-row">
+                            <label>Nova lozinka:</label>
+                            <input class="pass-input" type="password" [(ngModel)]="newPassword" />
+                          </div>
+                  
+                          <div class="pass-row">
+                            <label>Ponovi novu lozinku:</label>
+                            <input class="pass-input" type="password" [(ngModel)]="confirmPassword" />
+                          </div>
+                  
+                        </div>
+                  
+                        @if (passError) {
+                          <p class="pass-error">{{ passError }}</p>
+                        }
+                  
+                        <button class="modal-save pass-save-btn" (click)="savePassword()">Sačuvaj</button>
+                  
+                      </div>
+                    </div>
+                  }
+            
+            }
+              
+  
+          }
+  
+        </div>
+      </div>
+  
+    </div>
+  </div>
+  

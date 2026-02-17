@@ -1,0 +1,132 @@
+.login-container {
+    display: flex;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+  }
+  
+  /* LEFT SIDE */
+  .left-side {
+    flex: 1;
+    background-color: #5886D9;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .brand-title {
+    font-size: 90px;
+    font-weight: bold;
+    color: white;
+    margin: 0;
+  }
+  
+  .brand-subtitle {
+    font-size: 20px;
+    letter-spacing: 6px;
+    color: white;
+    margin-top: -10px;
+  }
+  
+  /* RIGHT SIDE */
+  .right-side {
+    flex: 1;
+    background-color: #D9D9D9;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  /* WELCOME */
+  .welcome-text {
+    font-size: 110px;
+    font-weight: bold;
+
+    color: #5886D9;
+  }
+  
+  /* LOGIN BOX */
+  .login-box {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-top: 60px;
+    align-items: flex-end; 
+  }
+  
+  /* INPUTS */
+  .input-field {
+    padding: 14px;
+    border: none;
+    border-radius: 19px;
+    font-size: 16px;
+    outline: none;
+    padding: 12px 16px 12px 40px;
+    width: 300px;
+  }
+
+  .input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .icon {
+    position: absolute;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+    fill: #555;
+  }
+  
+  .icon svg {
+    width: 100%;
+    height: 100%;
+  }
+
+ 
+  
+  /* BUTTON */
+  .login-button {
+    padding: 14px;
+    background-color: #fff;
+    border: none;
+    border-radius: 19px;
+    color: black;
+    font-size: 18px;
+    cursor: pointer;
+    margin-top: 30px;
+    width: 200px;
+  
+  }
+  
+  .login-button:hover {
+    background-color: #bfd0f0;
+  }
+  
+  /* REGISTER TEXT */
+  .register-text {
+    margin-top: 320px;
+    font-size: 18px;
+  }
+  
+  .register-link {
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .logo {
+    width: 900px;
+    max-width: 90%;
+    height: auto;
+  }
+  
+  .error-message {
+    color: #e53935;
+    font-size: 15px;
+    margin-top: 8px;
+    text-align: center;
+  }
