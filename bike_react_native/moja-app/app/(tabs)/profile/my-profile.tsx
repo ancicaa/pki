@@ -18,7 +18,6 @@ import { router } from 'expo-router';
 export default function ProfileIndexScreen() {
   const [isEditing, setIsEditing] = useState(false);
 
-  // mock podaci
   const [username, setUsername] = useState('anavranes');
   const [ime, setIme] = useState('Ana');
   const [prezime, setPrezime] = useState('Vraneš');
@@ -31,7 +30,6 @@ export default function ProfileIndexScreen() {
       return;
     }
 
-    // ✅ "Sačuvaj" (mock) -> vrati u view mode
     setIsEditing(false);
   };
 
@@ -50,7 +48,7 @@ export default function ProfileIndexScreen() {
 
           <Text style={styles.title}>Moj profil</Text>
 
-          {/* Username (read-only / edit) */}
+
           <View style={styles.inputContainer}>
             <Feather name="user" size={20} color="#111" style={styles.inputIcon} />
             <TextInput
@@ -64,7 +62,6 @@ export default function ProfileIndexScreen() {
             />
           </View>
 
-          {/* Promeni lozinku (uvek klikabilno, ne edit) */}
           <Pressable
             style={({ pressed }) => [styles.inputContainer, styles.passwordRow, pressed && { opacity: 0.85 }]}
             onPress={() => router.push('/profile/change-password')}

@@ -1,11 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Modal, Alert, Image } from 'react-native';
 import MapView, { Marker, Region, MapPressEvent } from 'react-native-maps';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Entypo from '@expo/vector-icons/Entypo';
+import * as ImagePicker from 'expo-image-picker';
 
 import { AppHeader } from '../../components/appHeader';
 import { MOCK_PINS, MapPin } from '../../src/data/mockPins';
+
+import { useLocalSearchParams, router } from 'expo-router';
 
 const INITIAL_REGION: Region = {
   latitude: 44.8055,
@@ -14,12 +17,85 @@ const INITIAL_REGION: Region = {
   longitudeDelta: 0.02,
 };
 
+type EndFlow = 'none' | 'photo' | 'done';
+
+const formatElapsed = (totalSec: number) => {
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+  const ss = String(totalSec % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+};
+
+// naplata: zaokruži minute naviše, ali minimum 1 minut kad krene
+const billedMinutes = (totalSec: number) => Math.max(1, Math.ceil(totalSec / 60));
+
 export default function HomeMapScreen() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [showBikes, setShowBikes] = useState(true);
   const [showParking, setShowParking] = useState(true);
-
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+
+  const { startRide } = useLocalSearchParams();
+
+  const [rideActive, setRideActive] = useState(false);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+
+  const [elapsedSec, setElapsedSec] = useState(0);
+  const [elapsed, setElapsed] = useState('00:00');
+
+  // cena po min
+  const [pricePerMinute, setPricePerMinute] = useState(12);
+
+  const [bikeTag, setBikeTag] = useState(2325); // #2325
+
+  const [showStartSuccess, setShowStartSuccess] = useState(false);
+
+  // END FLOW
+  const [endFlow, setEndFlow] = useState<EndFlow>('none');
+
+
+  const [rideEndPhoto, setRideEndPhoto] = useState<string | null>(null);
+
+  // final summary
+  const [finalElapsed, setFinalElapsed] = useState('00:00');
+  const [finalPrice, setFinalPrice] = useState(0);
+  const [finalBikeTag, setFinalBikeTag] = useState(0);
+
+  const totalPriceRsd = useMemo(() => {
+    const mins = billedMinutes(elapsedSec);
+    return mins * pricePerMinute;
+  }, [elapsedSec, pricePerMinute]);
+
+
+  useEffect(() => {
+    if (startRide === 'true') {
+      setRideActive(true);
+      const now = Date.now();
+      setStartedAt(now);
+
+      setElapsedSec(0);
+      setElapsed('00:00');
+
+      setPricePerMinute(12);
+      setBikeTag(2325);
+
+      setShowStartSuccess(true);
+
+      router.replace('/(tabs)/homepage');
+    }
+  }, [startRide]);
+
+  // timer
+  useEffect(() => {
+    if (!rideActive || !startedAt) return;
+
+    const t = setInterval(() => {
+      const diffSec = Math.floor((Date.now() - startedAt) / 1000);
+      setElapsedSec(diffSec);
+      setElapsed(formatElapsed(diffSec));
+    }, 500);
+
+    return () => clearInterval(t);
+  }, [rideActive, startedAt]);
 
   const filteredPins = useMemo(() => {
     return MOCK_PINS.filter((p) => {
@@ -37,18 +113,73 @@ export default function HomeMapScreen() {
   const isBikeSelected = selectedPin?.type === 'bike';
   const bikeInfo = isBikeSelected ? selectedPin?.bikeInfo : undefined;
 
-
   const isParkingSelected = selectedPin?.type === 'parking';
   const parkingInfo = isParkingSelected ? selectedPin?.parkingInfo : undefined;
 
-  const shouldDim = !!selectedPinId; // potamni za oba tipa
-
+  const shouldDim = !!selectedPinId;
 
   const handleMapPress = (e: MapPressEvent) => {
-    // Ako je klik bio na marker, nemoj odmah zatvarati selekciju
     if (e?.nativeEvent?.action === 'marker-press') return;
     setSelectedPinId(null);
     setFilterOpen(false);
+  };
+
+  const pickRideEndPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Greška', 'Potrebna je dozvola za pristup galeriji.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setRideEndPhoto(result.assets[0].uri);
+    }
+  };
+
+  const onStopRidePress = () => {
+    const finalSec = elapsedSec;
+    const finalElapsedStr = formatElapsed(finalSec);
+    const finalMins = billedMinutes(finalSec);
+    const finalTotal = finalMins * pricePerMinute;
+
+    setFinalElapsed(finalElapsedStr);
+    setFinalPrice(finalTotal);
+    setFinalBikeTag(bikeTag);
+
+    setRideActive(false);
+    setStartedAt(null);
+
+    setRideEndPhoto(null);
+    setEndFlow('photo');
+  };
+
+  const resetRide = () => {
+    setElapsedSec(0);
+    setElapsed('00:00');
+    setPricePerMinute(12);
+    setBikeTag(2325);
+    setRideEndPhoto(null);
+  };
+
+  const onPhotoOk = () => {
+    if (!rideEndPhoto) {
+      Alert.alert('Greška', 'Molimo dodaj fotografiju bicikla.');
+      return;
+    }
+    setEndFlow('done');
+  };
+
+  const onFinishOk = () => {
+    setEndFlow('none');
+    resetRide();
+    router.replace(`/(tabs)/homepage?qrReset=${Date.now()}`);
+    setTimeout(() => router.replace('/(tabs)/homepage'), 0);
   };
 
   return (
@@ -56,11 +187,7 @@ export default function HomeMapScreen() {
       <AppHeader onFilterPress={() => setFilterOpen((v) => !v)} />
 
       <View style={styles.mapWrapper}>
-        <MapView
-          style={styles.map}
-          initialRegion={INITIAL_REGION}
-          onPress={handleMapPress}
-        >
+        <MapView style={styles.map} initialRegion={INITIAL_REGION} onPress={handleMapPress}>
           {filteredPins.map((p: MapPin) => {
             const isSelected = p.id === selectedPinId;
 
@@ -75,33 +202,48 @@ export default function HomeMapScreen() {
                 tracksViewChanges={isSelected}
               >
                 <View style={{ alignItems: 'center' }}>
-                  {/* label badge (npr 100) */}
                   {p.label ? (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>{p.label}</Text>
                     </View>
                   ) : null}
 
-                  {/* pin */}
-                  <Entypo
-                    name="location-pin"
-                    size={size}
-                    color={pinColor}
-                    style={{
-                      // mala senka kad je selektovan
-                      opacity: isSelected ? 0.95 : 1,
-                    }}
-                  />
+                  <Entypo name="location-pin" size={size} color={pinColor} style={{ opacity: isSelected ? 0.95 : 1 }} />
                 </View>
               </Marker>
-
             );
           })}
         </MapView>
 
-        {/* potamnjenje */}
-        {shouldDim && <View pointerEvents="none" style={styles.dimOverlay} />}
+        {/* Ride HUD */}
+        {rideActive && (
+          <View style={styles.rideHud}>
+            <View style={styles.rideTopRow}>
+              <View style={styles.metric}>
+                <MaterialCommunityIcons name="clock-outline" size={24} color="#111" />
+                <Text style={styles.metricText}>{elapsed}</Text>
+              </View>
 
+              <View style={styles.metric}>
+                <MaterialCommunityIcons name="cash" size={26} color="#111" />
+                <Text style={styles.metricText}>{totalPriceRsd} RSD</Text>
+              </View>
+
+              <View style={styles.metric}>
+                <MaterialCommunityIcons name="bike" size={26} color="#111" />
+                <Text style={styles.metricText}>#{bikeTag}</Text>
+              </View>
+            </View>
+
+            <View style={styles.rideBottomRow}>
+              <Pressable style={styles.stopBtn} onPress={onStopRidePress}>
+                <Text style={styles.stopBtnText}>Završi vožnju</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {shouldDim && <View pointerEvents="none" style={styles.dimOverlay} />}
 
         {/* LEGENDA */}
         <View style={styles.legendCard}>
@@ -128,12 +270,7 @@ export default function HomeMapScreen() {
                   size={20}
                   color="#111"
                 />
-                <MaterialCommunityIcons
-                  name="map-marker"
-                  size={18}
-                  color="#FF4D3F"
-                  style={styles.markerIcon}
-                />
+                <MaterialCommunityIcons name="map-marker" size={18} color="#FF4D3F" style={styles.markerIcon} />
                 <Text style={styles.filterText}>Bicikl</Text>
               </Pressable>
 
@@ -143,19 +280,13 @@ export default function HomeMapScreen() {
                   size={20}
                   color="#111"
                 />
-                <MaterialCommunityIcons
-                  name="map-marker"
-                  size={18}
-                  color="#2F6BFF"
-                  style={styles.markerIcon}
-                />
+                <MaterialCommunityIcons name="map-marker" size={18} color="#2F6BFF" style={styles.markerIcon} />
                 <Text style={styles.filterText}>Parking mesto</Text>
               </Pressable>
             </View>
           </View>
         )}
 
-        {/* BIKE INFO KARTICA */}
         {isBikeSelected && bikeInfo && (
           <View style={styles.bikeCard}>
             <View style={styles.bikeRow}>
@@ -193,25 +324,88 @@ export default function HomeMapScreen() {
             </View>
           </View>
         )}
+
+        <Modal visible={showStartSuccess} transparent animationType="fade" onRequestClose={() => setShowStartSuccess(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.modalCard}>
+              <View style={styles.checkCircle}>
+                <Text style={styles.check}>✓</Text>
+              </View>
+
+              <Text style={styles.modalTitle}>Iznajmljivanje uspešno započeto!</Text>
+
+              <Pressable style={styles.okBtn} onPress={() => setShowStartSuccess(false)}>
+                <Text style={styles.okText}>OK</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={endFlow === 'photo'} transparent animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.endCard}>
+              <Text style={styles.endTitle}>
+                Iznajmljivanje završi tako što ćeš{'\n'}dodati fotografiju bicikla:
+              </Text>
+
+              <Pressable
+                style={[styles.photoBox, rideEndPhoto && styles.photoBoxDone]}
+                onPress={pickRideEndPhoto}
+              >
+                {rideEndPhoto ? (
+                  <Image source={{ uri: rideEndPhoto }} style={styles.previewImage} />
+                ) : (
+                  <>
+                    <MaterialCommunityIcons name="camera" size={44} color="#111" />
+                    <Text style={styles.photoText}>Dodaj fotografiju</Text>
+                  </>
+                )}
+              </Pressable>
+
+              <Pressable style={styles.okBtn} onPress={onPhotoOk}>
+                <Text style={styles.okText}>OK</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={endFlow === 'done'} transparent animationType="fade">
+          <View style={styles.modalBackdrop}>
+            <View style={styles.doneCard}>
+              <Text style={styles.doneTitle}>Iznajmljivanje uspešno završeno!</Text>
+
+              <View style={styles.doneRow}>
+                <View style={styles.doneMetric}>
+                  <MaterialCommunityIcons name="clock-outline" size={20} color="#111" />
+                  <Text style={styles.doneMetricText}>{finalElapsed}</Text>
+                </View>
+
+                <View style={styles.doneMetric}>
+                  <MaterialCommunityIcons name="cash" size={20} color="#111" />
+                  <Text style={styles.doneMetricText}>{finalPrice} RSD</Text>
+                </View>
+
+                <View style={styles.doneMetric}>
+                  <MaterialCommunityIcons name="bike" size={20} color="#111" />
+                  <Text style={styles.doneMetricText}>#{finalBikeTag}</Text>
+                </View>
+              </View>
+
+              <Pressable style={styles.okBtn} onPress={onFinishOk}>
+                <Text style={styles.okText}>OK</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#5A86D6',
-  },
-
-  mapWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-
-  map: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: '#5A86D6' },
+  mapWrapper: { flex: 1, position: 'relative' },
+  map: { flex: 1 },
 
   dimOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -219,10 +413,39 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
 
-  // legenda
-  legendCard: {
+  rideHud: {
     position: 'absolute',
     top: 14,
+    left: 14,
+    right: 14,
+    backgroundColor: '#fff',
+    borderRadius: 28,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    zIndex: 40,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  rideTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  metric: { flexDirection: 'row', alignItems: 'center' },
+  metricText: { marginLeft: 8, fontSize: 18, fontWeight: '900', color: '#111' },
+  rideBottomRow: { marginTop: 12, flexDirection: 'row', justifyContent: 'flex-end' },
+  stopBtn: {
+    backgroundColor: '#E53935',
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderWidth: 2,
+    borderColor: '#B71C1C',
+  },
+  stopBtnText: { color: '#fff', fontSize: 16, fontWeight: '900' },
+
+  legendCard: {
+    position: 'absolute',
+    top: 6,
     left: 14,
     backgroundColor: '#FFFFFF',
     borderRadius: 14,
@@ -234,7 +457,6 @@ const styles = StyleSheet.create({
   legendRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
   legendText: { marginLeft: 8, color: '#111', fontSize: 16 },
 
-  // badge (100)
   badge: {
     backgroundColor: '#FFD24A',
     borderRadius: 6,
@@ -246,16 +468,12 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontWeight: '800', color: '#111', fontSize: 12 },
 
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'transparent' },
 
-  // filter overlay
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'transparent',
-  },
   filterCard: {
     position: 'absolute',
-    top: 14,
-    right: 14,
+    top: 6, 
+    right: 14, 
     backgroundColor: '#fff',
     borderRadius: 14,
     paddingVertical: 10,
@@ -271,7 +489,6 @@ const styles = StyleSheet.create({
   markerIcon: { marginLeft: 10, marginRight: 8 },
   filterText: { fontSize: 16, color: '#111' },
 
-  // bike info card
   bikeCard: {
     position: 'absolute',
     left: 16,
@@ -287,17 +504,9 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
-  bikeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  bikeText: {
-    marginLeft: 10,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111',
-  },
+  bikeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
+  bikeText: { marginLeft: 10, fontSize: 15, fontWeight: '600', color: '#111' },
+
   infoCard: {
     position: 'absolute',
     left: 16,
@@ -313,16 +522,71 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
   },
-  infoRow: {
-    flexDirection: 'row',
+  infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  infoText: { marginLeft: 10, fontSize: 15, fontWeight: '600', color: '#111' },
+
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    padding: 16,
   },
-  infoText: {
-    marginLeft: 10,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#111',
+
+  modalCard: { width: '86%', backgroundColor: '#fff', borderRadius: 14, padding: 18, alignItems: 'center' },
+  checkCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 999,
+    backgroundColor: '#2ecc71',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
-  
+  check: { color: '#fff', fontSize: 26, fontWeight: '900' },
+  modalTitle: { textAlign: 'center', fontSize: 16, fontWeight: '700', color: '#222', marginBottom: 14 },
+
+  okBtn: {
+    alignSelf: 'center',
+    width: 120,
+    height: 36,
+    borderRadius: 999,
+    backgroundColor: '#EFEAEA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  okText: { fontWeight: '800', color: '#111' },
+
+  endCard: { width: '86%', backgroundColor: '#fff', borderRadius: 18, padding: 18, alignItems: 'center' },
+  endTitle: { width: '100%', fontSize: 16, fontWeight: '800', color: '#111', marginBottom: 14 },
+
+  photoBox: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#999',
+    paddingVertical: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    backgroundColor: '#F6F6F6',
+    overflow: 'hidden',
+  },
+  photoBoxDone: { borderColor: '#2ecc71', backgroundColor: '#ECF9F0' },
+  photoText: { marginTop: 10, fontSize: 16, fontWeight: '700', color: '#111' },
+  previewImage: { width: '100%', height: 140, resizeMode: 'cover' },
+
+  doneCard: { width: '86%', backgroundColor: '#fff', borderRadius: 18, padding: 18, alignItems: 'center' },
+  doneTitle: { fontSize: 16, fontWeight: '800', color: '#111', marginBottom: 12 },
+  doneRow: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 6,
+  },
+  doneMetric: { flexDirection: 'row', alignItems: 'center' },
+  doneMetricText: { marginLeft: 8, fontSize: 14, fontWeight: '800', color: '#111' },
 });

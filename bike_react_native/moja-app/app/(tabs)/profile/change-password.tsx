@@ -1,13 +1,28 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { router } from 'expo-router';
-import { AppHeader } from '../../../components/appHeader';
 import Entypo from '@expo/vector-icons/Entypo';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function ChangePasswordScreen() {
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [repeatPass, setRepeatPass] = useState('');
+
+  const goBack = () => {
+    console.log('back to my-profile');
+    router.replace('/profile/my-profile');
+
+  };
 
   const onSave = () => {
     if (!oldPass || !newPass || !repeatPass) {
@@ -18,19 +33,31 @@ export default function ChangePasswordScreen() {
       Alert.alert('Greška', 'Lozinke se ne poklapaju');
       return;
     }
-    Alert.alert('Uspešno', 'Lozinka je promenjena');
-    router.back();
+
+    Alert.alert('Uspešno', 'Lozinka je promenjena', [
+      { text: 'OK', onPress: () => router.replace('/profile/my-profile') },
+    ]);
   };
 
   return (
-    <View style={styles.screen}>
-
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={goBack}
+        activeOpacity={0.8}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="arrow-back" size={26} color="#FFFFFF" />
+      </TouchableOpacity>
 
       <View style={styles.content}>
         <Text style={styles.title}>Promeni lozinku</Text>
 
         <View style={styles.inputContainer}>
-        <Entypo name="lock" size={22} color="black" style={styles.inputIcon} />
+          <Entypo name="lock" size={20} color="#6B6B6B" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Stara lozinka"
@@ -42,7 +69,7 @@ export default function ChangePasswordScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-        <Entypo name="lock" size={22} color="black" style={styles.inputIcon} />
+          <Entypo name="lock" size={20} color="#6B6B6B" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Nova lozinka"
@@ -54,7 +81,7 @@ export default function ChangePasswordScreen() {
         </View>
 
         <View style={styles.inputContainer}>
-        <Entypo name="lock" size={22} color="black" style={styles.inputIcon} />
+          <Entypo name="lock" size={20} color="#6B6B6B" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Ponovi novu lozinku"
@@ -65,42 +92,88 @@ export default function ChangePasswordScreen() {
           />
         </View>
 
-        <TouchableOpacity style={styles.saveBtn} onPress={onSave} activeOpacity={0.9}>
+        <TouchableOpacity
+          style={styles.saveBtn}
+          onPress={onSave}
+          activeOpacity={0.85}
+        >
           <Text style={styles.saveText}>Sačuvaj</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#5A86D6' },
-  content: { flex: 1, backgroundColor: '#E6E6E6', padding: 18, paddingTop: 28 },
-  title: { fontSize: 24, fontWeight: '800', color: '#111', marginBottom: 18 },
+  screen: {
+    flex: 1,
+    backgroundColor: '#5A86D6',
+  },
+
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 55 : 40,
+    left: 16,
+    zIndex: 999,
+    elevation: 999,
+  },
+
+  content: {
+    flex: 1,
+    backgroundColor: '#E6E6E6',
+    paddingHorizontal: 22,
+    paddingTop: 100,
+  },
+
+  title: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#5A86D6',
+    marginBottom: 28,
+    textAlign: 'center',
+  },
 
   inputContainer: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: '#F4F4F4',
+    borderRadius: 28,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    height: 52,
-    marginBottom: 16,
+    paddingHorizontal: 18,
+    height: 56,
+    marginBottom: 20,
+    marginTop: 30,
   },
-  inputIcon: { marginRight: 10 },
-  input: { flex: 1, fontSize: 16, color: '#111' },
+
+  inputIcon: {
+    marginRight: 12,
+  },
+
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111',
+  },
 
   saveBtn: {
-    marginTop: 8,
+    marginTop: 30,
     alignSelf: 'center',
-    width: 190,
-    height: 52,
-    borderRadius: 26,
+    width: 210,
+    height: 54,
+    borderRadius: 28,
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
-  saveText: { fontSize: 18, fontWeight: '800', color: '#111' },
+
+  saveText: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#111',
+  },
 });

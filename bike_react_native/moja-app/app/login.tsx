@@ -1,18 +1,32 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Image,
+  StatusBar,
+  Platform,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { loginUser } from '@/src/services/authService';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Entypo from '@expo/vector-icons/Entypo';
 
-
-
 export default function LoginScreen() {
   const router = useRouter();
   const [korisnickoIme, setKorisnickoIme] = useState('');
   const [lozinka, setLozinka] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const goBack = () => {
+    console.log('back pressed');
+    if (router.canGoBack()) router.back();
+    else router.replace('/'); // fallback
+  };
 
   const handleLogin = async () => {
     if (!korisnickoIme || !lozinka) {
@@ -32,19 +46,20 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity 
+    <View style={styles.screen}>
+      <StatusBar barStyle="light-content" backgroundColor="#5886D9" translucent={false} />
+      <TouchableOpacity
         style={styles.backButton}
-        onPress={() => router.back()}
+        onPress={goBack}
+        activeOpacity={0.8}
+        hitSlop={{ top: 12, left: 12, right: 12, bottom: 12 }}
       >
-         <Text style={styles.backButtonText}><Ionicons name="arrow-back" size={20} color="#FFFFFF" /></Text>
-        
-        
+        <Ionicons name="arrow-back" size={28} color="#FFFFFF" />
       </TouchableOpacity>
 
-      <View style={styles.logoContainer}>
-        <Image 
-          source={require('../assets/images/logo.png')} 
+      <View style={styles.logoContainer} pointerEvents="none">
+        <Image
+          source={require('../assets/images/logo.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -53,7 +68,7 @@ export default function LoginScreen() {
       <Text style={styles.title}>Prijavi se</Text>
 
       <View style={styles.inputContainer}>
-      <Feather name="user" size={22} color="black" style={styles.inputIcon} />
+        <Feather name="user" size={22} color="black" style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Korisničko ime"
@@ -66,7 +81,7 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.inputContainer}>
-      <Entypo name="lock" size={22} color="black" style={styles.inputIcon} />
+        <Entypo name="lock" size={22} color="black" style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder="Lozinka"
@@ -78,46 +93,54 @@ export default function LoginScreen() {
         />
       </View>
 
-      <TouchableOpacity 
-        style={[styles.loginButton, loading && styles.buttonDisabled]} 
+      <TouchableOpacity
+        style={[styles.loginButton, loading && styles.buttonDisabled]}
         onPress={handleLogin}
         disabled={loading}
+        activeOpacity={0.9}
       >
-        <Text style={styles.buttonText}>
-          {loading ? 'Učitavanje...' : 'Prijavi se'}
-        </Text>
+        <Text style={styles.buttonText}>{loading ? 'Učitavanje...' : 'Prijavi se'}</Text>
       </TouchableOpacity>
-
-  
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: '#5886D9',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 25,
-    
+    paddingHorizontal: 25,
   },
+
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 55 : 40,
+    left: 15,
+    padding: 10,
+    borderRadius: 30,
+    zIndex: 999,
+    elevation: 999,
+  },
+
   logoContainer: {
     alignItems: 'center',
-    marginTop: -460,
+    marginTop: -460, 
   },
   logo: {
     width: 600,
     height: 300,
   },
+
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: 80,
-    marginTop: -80, 
-  
+    marginBottom: 40,
+    marginTop: -60,
   },
+
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -127,12 +150,16 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     width: '90%',
   },
+  inputIcon: {
+    marginRight: 12,
+  },
   input: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
     color: '#333',
   },
+
   loginButton: {
     backgroundColor: 'white',
     paddingVertical: 12,
@@ -154,26 +181,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  backButton: {
-    position: 'absolute',
-    top: 10,       // po potrebi (status bar)
-    left: 10,
-    padding: 8,
-    borderRadius: 20,
-  },
-  backButtonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  hint: {
-    color: 'white',
-    fontSize: 14,
-    marginTop: 20,
-    fontStyle: 'italic',
-  },
-  inputIcon:{
-    marginRight: 12,
-    fontSize: 20,
-  }
 });
