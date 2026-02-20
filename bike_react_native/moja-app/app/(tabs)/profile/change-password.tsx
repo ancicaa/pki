@@ -12,11 +12,15 @@ import {
 import { router } from 'expo-router';
 import Entypo from '@expo/vector-icons/Entypo';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { changePassword } from '@/src/services/authService';
 
 export default function ChangePasswordScreen() {
   const [oldPass, setOldPass] = useState('');
   const [newPass, setNewPass] = useState('');
   const [repeatPass, setRepeatPass] = useState('');
+ 
+  const [saving, setSaving] = useState(false);
 
   const goBack = () => {
     console.log('back to my-profile');
@@ -24,19 +28,57 @@ export default function ChangePasswordScreen() {
 
   };
 
-  const onSave = () => {
-    if (!oldPass || !newPass || !repeatPass) {
-      Alert.alert('Greška', 'Popuni sva polja');
+  const onSave = async () => {
+    if (!oldPass.trim() || !newPass.trim() || !repeatPass.trim()) {
+      Alert.alert('Greška', 'Popuni sva polja.');
       return;
     }
+  
     if (newPass !== repeatPass) {
-      Alert.alert('Greška', 'Lozinke se ne poklapaju');
+      Alert.alert('Greška', 'Lozinke se ne poklapaju.');
       return;
     }
-
-    Alert.alert('Uspešno', 'Lozinka je promenjena', [
-      { text: 'OK', onPress: () => router.replace('/profile/my-profile') },
-    ]);
+  
+    if (newPass.length < 6) {
+      Alert.alert('Greška', 'Nova lozinka mora imati bar 6 karaktera.');
+      return;
+    }
+  
+    if (saving) return;
+    setSaving(true);
+  
+    try {
+      const raw = await AsyncStorage.getItem('currentUser');
+      if (!raw) {
+        Alert.alert('Greška', 'Korisnik nije pronađen.');
+        return;
+      }
+  
+      const u = JSON.parse(raw);
+  
+      if (u.password !== oldPass) {
+        Alert.alert('Greška', 'Trenutna lozinka nije tačna.');
+        return;
+      }
+  
+      const updated = await changePassword(u.id, newPass);
+  
+      if (!updated) {
+        Alert.alert('Greška', 'Neuspešna promena lozinke.');
+        return;
+      }
+  
+      const newUser = { ...u, ...updated };
+      await AsyncStorage.setItem('currentUser', JSON.stringify(newUser));
+  
+      Alert.alert('Uspeh', 'Lozinka je uspešno promenjena.');
+      router.back();
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Greška', 'Došlo je do problema.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

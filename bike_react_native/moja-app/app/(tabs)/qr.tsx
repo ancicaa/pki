@@ -8,33 +8,47 @@ import {
   Easing,
   Modal,
   ActivityIndicator,
+  FlatList,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { router, useFocusEffect } from 'expo-router';
+import { fetchAvailableBikes, setBikeStatus } from '../../src/services/mapService.js';
 
 type Phase = 'scanning' | 'processing';
 
+type BikeOption = { id: string; label: string };
+
 export default function QrScreen() {
-  // 1) scanning
-  // 2) processing (blur + spinner)
-  // 3) success modal (ne mora ti ovde, ali ostavljam kako si imala)
   const [phase, setPhase] = useState<Phase>('scanning');
   const [showSuccess, setShowSuccess] = useState(false);
 
   const scanLineY = useRef(new Animated.Value(0)).current;
-
-  // ✅ bitno: timeout ref (da možemo da ga očistimo)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ✅ RESET svaki put kad uđeš opet u QR tab
+  const [bikeMenuVisible, setBikeMenuVisible] = useState(false);
+  const [selectedBikeId, setSelectedBikeId] = useState<string | null>(null);
+
+  const [availableBikes, setAvailableBikes] = useState<BikeOption[]>([]);
+  const [loadingBikes, setLoadingBikes] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
-      // kada ekran dobije fokus
+      let isActive = true;
+
       setPhase('scanning');
       setShowSuccess(false);
+      setBikeMenuVisible(false);
+      setSelectedBikeId(null);
+
+      (async () => {
+        setLoadingBikes(true);
+        const bikes = await fetchAvailableBikes();
+        if (isActive) setAvailableBikes(bikes);
+        setLoadingBikes(false);
+      })();
 
       return () => {
-        // kada izgubi fokus (odeš na drugi tab)
+        isActive = false;
         if (timerRef.current) {
           clearTimeout(timerRef.current);
           timerRef.current = null;
@@ -73,44 +87,57 @@ export default function QrScreen() {
     outputRange: [0, 170],
   });
 
-  const mockScan = () => {
+  const openBikeMenu = () => {
     if (phase !== 'scanning') return;
+    setBikeMenuVisible(true);
+  };
 
+  const selectBike = async (bikeId: string) => {
+    if (phase !== 'scanning') return;
+  
+    setSelectedBikeId(bikeId);
+    setBikeMenuVisible(false);
     setPhase('processing');
+  
+    const updated = await setBikeStatus(bikeId, 'Iznajmljen');
+  
+    if (!updated) {
+      setPhase('scanning');
+      setLoadingBikes(true);
+      const bikes = await fetchAvailableBikes();
+      setAvailableBikes(bikes);
+      setLoadingBikes(false);
+      return;
+    }
 
-    // ✅ očisti prethodni timeout (za svaki slučaj)
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-
+  
     timerRef.current = setTimeout(() => {
-      // ideš na mapu sa parametrom startRide
-      router.replace('/(tabs)/homepage?startRide=true');
-    }, 900);
+      router.replace(
+        `/(tabs)/homepage?startRide=true&bikeId=${encodeURIComponent(bikeId)}`
+      );
+    }, 400); 
   };
 
   return (
-    <Pressable style={styles.container} onPress={mockScan}>
-      {/* “kamera” mock */}
-      <View style={styles.fakeCamera} />
+    <Pressable style={styles.container} onPress={openBikeMenu}>
 
-      {/* dim overlay */}
+      <View style={styles.fakeCamera} />
       <View style={styles.dim} />
 
-      {/* Header */}
       <Text style={styles.header}>Skeniranje QR</Text>
 
-      {/* Skener UI */}
       <View style={styles.centerWrap}>
         <View style={styles.frame}>
-          {/* uglovi */}
+         
           <View style={[styles.corner, styles.tl]} />
           <View style={[styles.corner, styles.tr]} />
           <View style={[styles.corner, styles.bl]} />
           <View style={[styles.corner, styles.br]} />
 
-          {/* scanning linija */}
           {phase === 'scanning' && (
             <Animated.View
               style={[
@@ -122,24 +149,68 @@ export default function QrScreen() {
         </View>
 
         <Text style={styles.bottomText}>
-          {phase === 'scanning' ? 'Skeniraj QR kod!' : 'Obrađujem...'}
+          {phase === 'scanning'
+            ? 'Tapni da izabereš bicikl (umesto QR skenera)'
+            : 'Obrađujem...'}
         </Text>
 
-        <Text style={styles.hint}>(Tapni da simuliraš skeniranje)</Text>
+        <Text style={styles.hint}>
+          {phase === 'scanning'
+            ? `Dostupno: ${availableBikes.length} • Izabrano: ${selectedBikeId ?? '—'}`
+            : `Proveravam: ${selectedBikeId ?? '—'}`}
+        </Text>
       </View>
 
-      {/* Slika 2: blur + spinner overlay */}
+      <Modal visible={bikeMenuVisible} transparent animationType="fade">
+        <Pressable style={styles.menuBackdrop} onPress={() => setBikeMenuVisible(false)}>
+          <Pressable style={styles.menuCard} onPress={() => {}}>
+            <Text style={styles.menuTitle}>Izaberi dostupni bicikl</Text>
+
+            {loadingBikes ? (
+              <View style={styles.menuLoading}>
+                <ActivityIndicator size="large" color="#ffffff" />
+                <Text style={styles.menuEmpty}>Učitavam dostupne bicikle...</Text>
+              </View>
+            ) : availableBikes.length === 0 ? (
+              <Text style={styles.menuEmpty}>Trenutno nema dostupnih bicikla.</Text>
+            ) : (
+              <FlatList
+                data={availableBikes}
+                keyExtractor={(x) => x.id}
+                ItemSeparatorComponent={() => <View style={styles.menuSep} />}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.menuItem,
+                      pressed && { opacity: 0.7 },
+                    ]}
+                    onPress={() => selectBike(item.id)}
+                  >
+                    <Text style={styles.menuItemText}>{item.label}</Text>
+                  </Pressable>
+                )}
+              />
+            )}
+
+            <Pressable style={styles.menuCancel} onPress={() => setBikeMenuVisible(false)}>
+              <Text style={styles.menuCancelText}>Otkaži</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {phase === 'processing' && (
         <View style={StyleSheet.absoluteFillObject}>
           <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFillObject} />
           <View style={styles.processingCenter}>
             <ActivityIndicator size="large" color="#ffffff" />
-            <Text style={styles.processingLabel}>Proveravam QR...</Text>
+            <Text style={styles.processingLabel}>
+              Proveravam{selectedBikeId ? `: ${selectedBikeId}` : '...'}
+            </Text>
           </View>
         </View>
       )}
 
-      {/* Slika 3: success modal (ostavljam, ali ti ga realno ne koristiš ovde) */}
       <Modal visible={showSuccess} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
@@ -223,13 +294,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-
   hint: {
     marginTop: 10,
     fontSize: 12,
     color: 'rgba(255,255,255,0.6)',
+    textAlign: 'center',
   },
-
   processingCenter: {
     flex: 1,
     alignItems: 'center',
@@ -240,7 +310,63 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.85)',
     fontWeight: '700',
   },
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    padding: 16,
+    justifyContent: 'center',
+  },
+  menuCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: 14,
+    padding: 14,
+    maxHeight: '70%',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  menuTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+    marginBottom: 10,
+  },
+  menuLoading: {
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuEmpty: {
+    color: 'rgba(255,255,255,0.7)',
+    paddingVertical: 10,
+    textAlign: 'center',
+  },
+  menuItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  menuItemText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+  menuSep: {
+    height: 10,
+  },
+  menuCancel: {
+    marginTop: 12,
+    alignSelf: 'flex-end',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+  },
+  menuCancelText: {
+    color: '#fff',
+    fontWeight: '800',
+  },
 
+  // Existing success modal styles (ostavljeno)
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',

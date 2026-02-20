@@ -6,9 +6,43 @@ import Entypo from '@expo/vector-icons/Entypo';
 import * as ImagePicker from 'expo-image-picker';
 
 import { AppHeader } from '../../components/appHeader';
-import { MOCK_PINS, MapPin } from '../../src/data/mockPins';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useLocalSearchParams, router } from 'expo-router';
+import * as Location from 'expo-location';
+import { fetchMapPins, fetchBikeById, setBikeStatus } from '../../src/services/mapService';
+import { createRental } from '../../src/services/rentalService.js';
+import * as Notifications from 'expo-notifications';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+const formatDateTime = (ts: number) => {
+  const d = new Date(ts);
+  const datum = `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}`;
+  const vreme = `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  return { datum, vreme };
+};
+
+const formatDate = (ts: number) => {
+  const d = new Date(ts);
+  return `${pad2(d.getDate())}.${pad2(d.getMonth() + 1)}.${d.getFullYear()}.`;
+};
+
+const formatTime = (ts: number) => {
+  const d = new Date(ts);
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+};
+
 
 const INITIAL_REGION: Region = {
   latitude: 44.8055,
@@ -25,40 +59,72 @@ const formatElapsed = (totalSec: number) => {
   return `${mm}:${ss}`;
 };
 
-// naplata: zaokruži minute naviše, ali minimum 1 minut kad krene
 const billedMinutes = (totalSec: number) => Math.max(1, Math.ceil(totalSec / 60));
 
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371000;
+  const toRad = (x: number) => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+
+async function reverseGeocode(lat: number, lon: number) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=sr`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'bike-app/1.0' },
+  });
+  if (!res.ok) throw new Error('Reverse geocode failed');
+  const data = await res.json();
+  return (data?.display_name as string) || '';
+}
+
+
 export default function HomeMapScreen() {
+  const [pins, setPins] = useState<any[]>([]);
+  const [pinsLoading, setPinsLoading] = useState(true);
+
   const [filterOpen, setFilterOpen] = useState(false);
   const [showBikes, setShowBikes] = useState(true);
   const [showParking, setShowParking] = useState(true);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
 
-  const { startRide } = useLocalSearchParams();
-
+  const { startRide, bikeId } = useLocalSearchParams();
   const [rideActive, setRideActive] = useState(false);
   const [startedAt, setStartedAt] = useState<number | null>(null);
 
   const [elapsedSec, setElapsedSec] = useState(0);
   const [elapsed, setElapsed] = useState('00:00');
 
-  // cena po min
   const [pricePerMinute, setPricePerMinute] = useState(12);
+  const [bikeTag, setBikeTag] = useState(0);
 
-  const [bikeTag, setBikeTag] = useState(2325); // #2325
-
-  const [showStartSuccess, setShowStartSuccess] = useState(false);
-
-  // END FLOW
   const [endFlow, setEndFlow] = useState<EndFlow>('none');
-
-
   const [rideEndPhoto, setRideEndPhoto] = useState<string | null>(null);
 
-  // final summary
   const [finalElapsed, setFinalElapsed] = useState('00:00');
   const [finalPrice, setFinalPrice] = useState(0);
   const [finalBikeTag, setFinalBikeTag] = useState(0);
+
+  const [selectedAddress, setSelectedAddress] = useState<string>('');
+  const [addressLoading, setAddressLoading] = useState(false);
+
+
+  const [addressCache, setAddressCache] = useState<Record<string, string>>({});
+
+  const [userLoc, setUserLoc] = useState<any>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [selectedBikeType, setSelectedBikeType] = useState<string>('—');
+  const [selectedBikeImage, setSelectedBikeImage] = useState<string>('/images/bike2.png'); // fallback
+
+
+
+
 
   const totalPriceRsd = useMemo(() => {
     const mins = billedMinutes(elapsedSec);
@@ -66,23 +132,70 @@ export default function HomeMapScreen() {
   }, [elapsedSec, pricePerMinute]);
 
 
+
+
   useEffect(() => {
-    if (startRide === 'true') {
+    let alive = true;
+
+    const start = async () => {
+      if (startRide !== 'true') return;
       setRideActive(true);
       const now = Date.now();
       setStartedAt(now);
-
       setElapsedSec(0);
       setElapsed('00:00');
 
-      setPricePerMinute(12);
-      setBikeTag(2325);
 
-      setShowStartSuccess(true);
+      setPricePerMinute(12);
+      const idStr = typeof bikeId === 'string' ? bikeId : null;
+
+      if (idStr) {
+        const bike = await fetchBikeById(idStr);
+
+        if (alive && bike) {
+          setBikeTag(Number(bike.id));
+          setPricePerMinute(Number(bike.cena ?? 12));
+          setSelectedBikeType(String(bike.tip ?? '—'));
+          setSelectedBikeImage(String(bike.slika ?? '/images/bike2.png'));
+        } else if (alive) {
+          setBikeTag(Number(idStr));
+        }
+      } else {
+        setBikeTag(0);
+      }
+
+      if (alive) {
+        await Notifications.requestPermissionsAsync();
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: '🚲 Vožnja započeta!',
+            body: `Bicikl #${bikeId} · ${pricePerMinute} RSD/min`,
+            sound: true,
+          },
+          trigger: null, 
+        });
+      }
 
       router.replace('/(tabs)/homepage');
-    }
-  }, [startRide]);
+    };
+
+    start();
+
+    return () => {
+      alive = false;
+    };
+  }, [startRide, bikeId]);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      const loc = await Location.getCurrentPositionAsync({});
+      setUserLoc(loc.coords);
+    })();
+  }, []);
+
 
   // timer
   useEffect(() => {
@@ -98,12 +211,12 @@ export default function HomeMapScreen() {
   }, [rideActive, startedAt]);
 
   const filteredPins = useMemo(() => {
-    return MOCK_PINS.filter((p) => {
+    return pins.filter((p) => {
       if (p.type === 'bike') return showBikes;
       if (p.type === 'parking') return showParking;
       return true;
     });
-  }, [showBikes, showParking]);
+  }, [pins, showBikes, showParking]);
 
   const selectedPin = useMemo(() => {
     if (!selectedPinId) return null;
@@ -142,7 +255,76 @@ export default function HomeMapScreen() {
     }
   };
 
-  const onStopRidePress = () => {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      console.log('selectedPinId:', selectedPinId);
+      console.log('selectedPin:', selectedPin);
+      if (!selectedPin) {
+        console.log('NO selectedPin');
+        setSelectedAddress('');
+        return;
+      }
+
+      const key = `${selectedPin.latitude.toFixed(5)},${selectedPin.longitude.toFixed(5)}`;
+
+
+      if (addressCache[key]) {
+        setSelectedAddress(addressCache[key]);
+        setAddressLoading(false);
+        return;
+      }
+
+      setAddressLoading(true);
+
+      try {
+        console.log('SELECTED PIN:', selectedPin);
+
+        const addr = await reverseGeocode(selectedPin.latitude, selectedPin.longitude);
+
+        if (!cancelled) {
+          setSelectedAddress(addr);
+
+          setAddressCache(prev => ({
+            ...prev,
+            [key]: addr,
+          }));
+        }
+      } catch {
+        if (!cancelled) {
+          setSelectedAddress('Adresa nije dostupna');
+        }
+      } finally {
+        if (!cancelled) {
+          setAddressLoading(false);
+        }
+      }
+    }
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPinId]);
+  useEffect(() => {
+    if (!selectedPin || !userLoc) return;
+
+    const d = getDistance(
+      userLoc.latitude,
+      userLoc.longitude,
+      selectedPin.latitude,
+      selectedPin.longitude
+    );
+
+    setDistance(d);
+  }, [selectedPin, userLoc]);
+
+
+
+
+  const onStopRidePress = async () => {
     const finalSec = elapsedSec;
     const finalElapsedStr = formatElapsed(finalSec);
     const finalMins = billedMinutes(finalSec);
@@ -151,6 +333,42 @@ export default function HomeMapScreen() {
     setFinalElapsed(finalElapsedStr);
     setFinalPrice(finalTotal);
     setFinalBikeTag(bikeTag);
+
+    // ✅ 1) uzmi usera iz AsyncStorage
+    // ✅ username + userId
+    let username = 'unknown';
+    let userId: number | null = null;
+    try {
+      const raw = await AsyncStorage.getItem('currentUser');
+      if (raw) {
+        const user = JSON.parse(raw);
+        username = user?.username ?? 'unknown';
+        userId = user?.id ?? user?._id ?? null; // šta god imaš
+      }
+    } catch { }
+
+    const startTs = startedAt ?? Date.now() - elapsedSec * 1000;
+    const endTs = Date.now();
+
+    const datum = formatDate(startTs);
+    const vreme = `${formatTime(startTs)} - ${formatTime(endTs)}`;
+
+    await createRental({
+      userId: userId ?? 0,
+      korisnik: username,
+      bikeId: bikeTag,
+      datum,
+      vreme,
+      minuta: billedMinutes(elapsedSec),
+      tip: selectedBikeType,
+      cenaPoMinutu: pricePerMinute,
+      cena: billedMinutes(elapsedSec) * pricePerMinute,
+      slika: selectedBikeImage,
+    });
+
+    if (bikeTag) {
+      await setBikeStatus(String(bikeTag), 'Dostupan');
+    }
 
     setRideActive(false);
     setStartedAt(null);
@@ -163,7 +381,7 @@ export default function HomeMapScreen() {
     setElapsedSec(0);
     setElapsed('00:00');
     setPricePerMinute(12);
-    setBikeTag(2325);
+    setBikeTag(0);
     setRideEndPhoto(null);
   };
 
@@ -175,11 +393,33 @@ export default function HomeMapScreen() {
     setEndFlow('done');
   };
 
+
+  useEffect(() => {
+    let alive = true;
+
+    const load = async () => {
+      const data = await fetchMapPins();
+      if (!alive) return;
+      setPins(data);
+      setPinsLoading(false);
+    };
+
+    load();
+
+    const interval = setInterval(load, 30000);
+    return () => {
+      alive = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+
+
   const onFinishOk = () => {
     setEndFlow('none');
     resetRide();
-    router.replace(`/(tabs)/homepage?qrReset=${Date.now()}`);
-    setTimeout(() => router.replace('/(tabs)/homepage'), 0);
+    fetchMapPins().then(setPins); // samo jedan refresh
+    router.replace('/(tabs)/homepage');
   };
 
   return (
@@ -187,10 +427,10 @@ export default function HomeMapScreen() {
       <AppHeader onFilterPress={() => setFilterOpen((v) => !v)} />
 
       <View style={styles.mapWrapper}>
-        <MapView style={styles.map} initialRegion={INITIAL_REGION} onPress={handleMapPress}>
-          {filteredPins.map((p: MapPin) => {
+        <MapView style={styles.map} initialRegion={INITIAL_REGION} onPress={handleMapPress} showsUserLocation={true}
+          showsMyLocationButton={true}>
+          {filteredPins.map((p: any) => {
             const isSelected = p.id === selectedPinId;
-
             const pinColor = p.type === 'bike' ? '#FF4D3F' : '#2F6BFF';
             const size = isSelected ? 46 : 36;
 
@@ -207,7 +447,6 @@ export default function HomeMapScreen() {
                       <Text style={styles.badgeText}>{p.label}</Text>
                     </View>
                   ) : null}
-
                   <Entypo name="location-pin" size={size} color={pinColor} style={{ opacity: isSelected ? 0.95 : 1 }} />
                 </View>
               </Marker>
@@ -219,20 +458,31 @@ export default function HomeMapScreen() {
         {rideActive && (
           <View style={styles.rideHud}>
             <View style={styles.rideTopRow}>
+
+              {/* VREME */}
               <View style={styles.metric}>
                 <MaterialCommunityIcons name="clock-outline" size={24} color="#111" />
                 <Text style={styles.metricText}>{elapsed}</Text>
               </View>
 
+              {/* UKUPNA CENA */}
               <View style={styles.metric}>
                 <MaterialCommunityIcons name="cash" size={26} color="#111" />
                 <Text style={styles.metricText}>{totalPriceRsd} RSD</Text>
               </View>
 
+              {/* CENA PO MINUTI */}
+              {/* <View style={styles.metric}>
+                <MaterialCommunityIcons name="currency-rub" size={22} color="#111" />
+                <Text style={styles.metricText}>{pricePerMinute} RSD/min</Text>
+              </View> */}
+
+              {/* ID BICIKLA */}
               <View style={styles.metric}>
                 <MaterialCommunityIcons name="bike" size={26} color="#111" />
                 <Text style={styles.metricText}>#{bikeTag}</Text>
               </View>
+
             </View>
 
             <View style={styles.rideBottomRow}>
@@ -251,7 +501,6 @@ export default function HomeMapScreen() {
             <MaterialCommunityIcons name="map-marker" size={18} color="#FF4D3F" />
             <Text style={styles.legendText}>Bicikl</Text>
           </View>
-
           <View style={styles.legendRow}>
             <MaterialCommunityIcons name="map-marker" size={18} color="#2F6BFF" />
             <Text style={styles.legendText}>Parking mesto</Text>
@@ -262,7 +511,6 @@ export default function HomeMapScreen() {
         {filterOpen && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Pressable style={styles.backdrop} onPress={() => setFilterOpen(false)} />
-
             <View style={styles.filterCard}>
               <Pressable style={styles.filterRow} onPress={() => setShowBikes((v) => !v)}>
                 <MaterialCommunityIcons
@@ -287,67 +535,75 @@ export default function HomeMapScreen() {
           </View>
         )}
 
+        {/* Bike info card */}
         {isBikeSelected && bikeInfo && (
           <View style={styles.bikeCard}>
             <View style={styles.bikeRow}>
               <MaterialCommunityIcons name="map-marker-outline" size={18} color="#111" />
-              <Text style={styles.bikeText}>Adresa: {bikeInfo.address}</Text>
-            </View>
+              <Text style={styles.bikeText}>
+                Adresa: {addressLoading ? 'Učitavanje…' : (selectedAddress || '—')}
+              </Text>
 
+            </View>
             <View style={styles.bikeRow}>
               <MaterialCommunityIcons name="bicycle" size={18} color="#111" />
-              <Text style={styles.bikeText}>Tip: {bikeInfo.bikeType} bicikl</Text>
+              <Text style={styles.bikeText}>Tip: {bikeInfo.bikeType} bicikl, ID: {bikeInfo.bikeId}</Text>
             </View>
-
             <View style={styles.bikeRow}>
               <MaterialCommunityIcons name="cash" size={18} color="#111" />
               <Text style={styles.bikeText}>Cena: {bikeInfo.pricePerMinute} RSD po minutu</Text>
             </View>
-
-            <View style={styles.bikeRow}>
-              <MaterialCommunityIcons name="battery" size={18} color="#111" />
-              <Text style={styles.bikeText}>Baterija: {bikeInfo.battery}%</Text>
-            </View>
+            {(bikeInfo.bikeType === 'Električni' || bikeInfo.bikeType === 'Hibridni') && (
+              <View style={styles.bikeRow}>
+                <MaterialCommunityIcons name="battery" size={18} color="#111" />
+                <Text style={styles.bikeText}>Baterija: {bikeInfo.battery}%</Text>
+              </View>
+            )}
           </View>
         )}
 
+        {/* Parking info card */}
         {isParkingSelected && parkingInfo && (
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="map-marker-outline" size={18} color="#111" />
-              <Text style={styles.infoText}>Adresa: {parkingInfo.address}</Text>
-            </View>
+              <Text style={styles.infoText}>
+                Adresa: {addressLoading ? 'Učitavanje…' : (selectedAddress || '—')}
+              </Text>
 
+            </View>
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="map-marker-distance" size={18} color="#111" />
-              <Text style={styles.infoText}>Udaljenost: {parkingInfo.distanceMeters}m</Text>
+              <Text style={styles.infoText}>
+                Udaljenost: {distance ? `${distance} m` : '—'}
+              </Text>
+
             </View>
           </View>
         )}
 
-        <Modal visible={showStartSuccess} transparent animationType="fade" onRequestClose={() => setShowStartSuccess(false)}>
+        {/* Modal: uspešno započeto */}
+        {/* <Modal visible={showStartSuccess} transparent animationType="fade" onRequestClose={() => setShowStartSuccess(false)}>
           <View style={styles.modalBackdrop}>
             <View style={styles.modalCard}>
               <View style={styles.checkCircle}>
                 <Text style={styles.check}>✓</Text>
               </View>
-
               <Text style={styles.modalTitle}>Iznajmljivanje uspešno započeto!</Text>
-
               <Pressable style={styles.okBtn} onPress={() => setShowStartSuccess(false)}>
                 <Text style={styles.okText}>OK</Text>
               </Pressable>
             </View>
           </View>
-        </Modal>
+        </Modal> */}
 
+        {/* Modal: foto na kraju */}
         <Modal visible={endFlow === 'photo'} transparent animationType="fade">
           <View style={styles.modalBackdrop}>
             <View style={styles.endCard}>
               <Text style={styles.endTitle}>
                 Iznajmljivanje završi tako što ćeš{'\n'}dodati fotografiju bicikla:
               </Text>
-
               <Pressable
                 style={[styles.photoBox, rideEndPhoto && styles.photoBoxDone]}
                 onPress={pickRideEndPhoto}
@@ -361,7 +617,6 @@ export default function HomeMapScreen() {
                   </>
                 )}
               </Pressable>
-
               <Pressable style={styles.okBtn} onPress={onPhotoOk}>
                 <Text style={styles.okText}>OK</Text>
               </Pressable>
@@ -369,34 +624,32 @@ export default function HomeMapScreen() {
           </View>
         </Modal>
 
+        {/* Modal: završeno */}
         <Modal visible={endFlow === 'done'} transparent animationType="fade">
           <View style={styles.modalBackdrop}>
             <View style={styles.doneCard}>
               <Text style={styles.doneTitle}>Iznajmljivanje uspešno završeno!</Text>
-
               <View style={styles.doneRow}>
                 <View style={styles.doneMetric}>
                   <MaterialCommunityIcons name="clock-outline" size={20} color="#111" />
                   <Text style={styles.doneMetricText}>{finalElapsed}</Text>
                 </View>
-
                 <View style={styles.doneMetric}>
                   <MaterialCommunityIcons name="cash" size={20} color="#111" />
                   <Text style={styles.doneMetricText}>{finalPrice} RSD</Text>
                 </View>
-
                 <View style={styles.doneMetric}>
                   <MaterialCommunityIcons name="bike" size={20} color="#111" />
                   <Text style={styles.doneMetricText}>#{finalBikeTag}</Text>
                 </View>
               </View>
-
               <Pressable style={styles.okBtn} onPress={onFinishOk}>
                 <Text style={styles.okText}>OK</Text>
               </Pressable>
             </View>
           </View>
         </Modal>
+
       </View>
     </View>
   );
@@ -472,8 +725,8 @@ const styles = StyleSheet.create({
 
   filterCard: {
     position: 'absolute',
-    top: 6, 
-    right: 14, 
+    top: 6,
+    right: 14,
     backgroundColor: '#fff',
     borderRadius: 14,
     paddingVertical: 10,

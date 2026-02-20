@@ -95,9 +95,9 @@ class="input-field" [(ngModel)]="ime" />
        class="input-field" [(ngModel)]="email" />
         </div>
 
-        <button class="login-button" (click)="registruj()">
-            Registruj se
-        </button>
+        <button class="login-button" (click)="registruj()" [disabled]="isLoading">
+            {{ isLoading ? 'Registracija...' : 'Registruj se' }}
+          </button>
         <p class="error-message" *ngIf="errorMessage">
             {{ errorMessage }}
           </p>

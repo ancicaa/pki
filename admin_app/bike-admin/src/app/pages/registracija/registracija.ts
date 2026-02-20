@@ -2,6 +2,9 @@ import { Component } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { take } from 'rxjs/operators';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-registracija',
@@ -11,45 +14,77 @@ import { CommonModule } from '@angular/common';
 })
 export class Registracija {
 
-  username: string = '';
-  ime: string = '';
-  prezime: string = '';
-  password: string = '';
-  telefon: string = '';
-  email: string = '';
-  errorMessage: string = '';
+  username = '';
+  ime = '';
+  prezime = '';
+  password = '';
+  telefon = '';
+  email = '';
+  errorMessage = '';
+  isLoading = false;
 
-  constructor(private router: Router) {}
+  private baseUrl = 'http://localhost:3000';
+
+  constructor(
+    private router: Router,
+    private http: HttpClient,
+    private auth: AuthService
+  ) {}
 
   registruj() {
-    if (!this.username || !this.ime || !this.prezime || 
+    this.errorMessage = '';
+
+    if (!this.username || !this.ime || !this.prezime ||
         !this.password || !this.telefon || !this.email) {
       this.errorMessage = 'Sva polja su obavezna.';
       return;
     }
 
-    const existing = JSON.parse(sessionStorage.getItem('users') || '[]');
-
-    const userExists = existing.find((u: any) => u.username === this.username);
-    if (userExists) {
-      this.errorMessage = 'Korisničko ime već postoji.';
+    if (this.password.length < 6) {
+      this.errorMessage = 'Lozinka mora imati najmanje 6 karaktera.';
       return;
     }
 
-    const newUser = {
-      username: this.username,
-      ime: this.ime,
-      prezime: this.prezime,
-      password: this.password,
-      telefon: this.telefon,
-      email: this.email,
-      role: 'user'
-    };
+    this.isLoading = true;
 
-    existing.push(newUser);
-    sessionStorage.setItem('users', JSON.stringify(existing));
-    sessionStorage.setItem('currentUser', JSON.stringify(newUser));
+    // Proveri da li username već postoji
+    this.http.get<any[]>(`${this.baseUrl}/users?username=${this.username}`)
+      .pipe(take(1))
+      .subscribe({
+        next: (existing) => {
+          if (existing.length > 0) {
+            this.errorMessage = 'Korisničko ime već postoji.';
+            this.isLoading = false;
+            return;
+          }
 
-    this.router.navigate(['/admin']);
+          const newUser = {
+            username: this.username,
+            ime: this.ime,
+            prezime: this.prezime,
+            password: this.password,
+            telefon: this.telefon,
+            email: this.email,
+            role: 'admin'
+          };
+
+          this.http.post<any>(`${this.baseUrl}/users`, newUser)
+            .pipe(take(1))
+            .subscribe({
+              next: (created) => {
+                this.auth.setCurrentUser(created);
+                this.router.navigate(['/admin']);
+              },
+              error: () => {
+                this.errorMessage = 'Greška pri registraciji. Pokušajte ponovo.';
+                this.isLoading = false;
+              }
+            });
+        },
+        error: () => {
+          this.errorMessage = 'Greška pri proveri korisničkog imena.';
+          this.isLoading = false;
+        }
+      });
   }
 }

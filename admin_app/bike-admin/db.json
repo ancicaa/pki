@@ -1,0 +1,600 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin",
+      "ime": "Anaa",
+      "prezime": "Vraneš",
+      "telefon": "+381691010101",
+      "email": "admin@bike.rs"
+    },
+    {
+      "id": "2",
+      "username": "ana",
+      "password": "1234",
+      "role": "user",
+      "ime": "Ana",
+      "prezime": "tggg",
+      "telefon": "+381601234567",
+      "email": "ana@bike.rs"
+    },
+    {
+      "id": "3",
+      "username": "marko",
+      "password": "marko123",
+      "role": "admin",
+      "ime": "Marko",
+      "prezime": "Jovanović",
+      "telefon": "+381611112222",
+      "email": "marko@bike.rs"
+    },
+    {
+      "id": "4",
+      "username": "test",
+      "password": "Bokeljska1A",
+      "role": "user",
+      "ime": "Test",
+      "prezime": "Nikolić",
+      "telefon": "+381641234567",
+      "email": "korisnik1@bike.rs"
+    },
+    {
+      "id": "5",
+      "username": "danilo",
+      "ime": "Danilo",
+      "prezime": "Masulovic",
+      "password": "admin1234",
+      "telefon": "+3816924944843",
+      "email": "danilo@gmail.com",
+      "role": "admin"
+    }
+  ],
+  "bikes": [
+    {
+      "id": "1",
+      "tip": "Električni",
+      "cena": 17,
+      "status": "Na održavanju",
+      "latitude": 44.8068,
+      "longitude": 20.4698,
+      "baterija": 71
+    },
+    {
+      "id": "2",
+      "tip": "Gradski",
+      "cena": 21,
+      "status": "Dostupan",
+      "latitude": 44.8039,
+      "longitude": 20.4732,
+      "baterija": 0
+    },
+    {
+      "id": "3",
+      "tip": "Hibridni",
+      "cena": 13,
+      "status": "Na održavanju",
+      "latitude": 44.8019,
+      "longitude": 20.4709,
+      "baterija": 90
+    },
+    {
+      "id": "4",
+      "tip": "Električni",
+      "cena": 14,
+      "status": "Neispravan",
+      "latitude": 44.8082,
+      "longitude": 20.4748,
+      "baterija": 41
+    },
+    {
+      "id": "5",
+      "tip": "Električni",
+      "cena": 5333,
+      "status": "Na održavanju",
+      "latitude": 44.8057,
+      "longitude": 20.471,
+      "baterija": 20
+    },
+    {
+      "id": "6",
+      "tip": "Gradski",
+      "cena": 21,
+      "status": "Neispravan",
+      "latitude": 44.8045,
+      "longitude": 20.4668,
+      "baterija": 0
+    },
+    {
+      "id": "7",
+      "tip": "Hibridni",
+      "cena": 14,
+      "status": "Dostupan",
+      "latitude": 43.1344,
+      "longitude": 20.4686,
+      "baterija": 85
+    },
+    {
+      "id": "8",
+      "tip": "Električni",
+      "cena": 12,
+      "status": "Dostupan",
+      "latitude": 44.8069,
+      "longitude": 20.4716,
+      "baterija": 62
+    },
+    {
+      "id": "9",
+      "tip": "Električni",
+      "cena": 7,
+      "status": "Neispravan",
+      "latitude": 44.8095,
+      "longitude": 20.4678,
+      "baterija": 55
+    },
+    {
+      "id": "10",
+      "tip": "Električni",
+      "cena": 13,
+      "status": "Dostupan",
+      "latitude": 44.8033,
+      "longitude": 20.4755,
+      "baterija": 88
+    },
+    {
+      "id": "11",
+      "tip": "Gradski",
+      "cena": 21,
+      "status": "Na održavanju",
+      "latitude": 44.8051,
+      "longitude": 20.4695,
+      "baterija": 100
+    },
+    {
+      "id": "12",
+      "tip": "Električni",
+      "cena": 15,
+      "status": "Iznajmljen",
+      "latitude": 44.8076,
+      "longitude": 20.4721,
+      "baterija": 33
+    },
+    {
+      "id": "13",
+      "tip": "Električni",
+      "cena": 12,
+      "status": "Dostupan",
+      "latitude": 44.333,
+      "longitude": 20.567,
+      "baterija": 100
+    },
+    {
+      "id": "14",
+      "tip": "Električni",
+      "cena": 23,
+      "status": "Dostupan",
+      "latitude": 33.222,
+      "longitude": 10.111,
+      "baterija": 98
+    },
+    {
+      "id": "15",
+      "tip": "Gradski",
+      "cena": 7,
+      "status": "Neispravan",
+      "latitude": 44.08,
+      "longitude": 20.49,
+      "baterija": 0
+    },
+    {
+      "id": 16,
+      "tip": "Električni",
+      "cena": 34,
+      "status": "Dostupan",
+      "latitude": 40.787,
+      "longitude": 20.23,
+      "baterija": 100
+    }
+  ],
+  "bikeTypes": [
+    {
+      "id": "1",
+      "name": "Električni"
+    },
+    {
+      "id": "2",
+      "name": "Gradski"
+    },
+    {
+      "id": "3",
+      "name": "Hibridni"
+    },
+    {
+      "id": "4",
+      "name": "Brdski (MTB)"
+    },
+    {
+      "id": "5",
+      "name": "Dečiji"
+    }
+  ],
+  "iznajmljivanja": [
+    {
+      "id": "1",
+      "userId": 4,
+      "korisnik": "test",
+      "bikeId": 2,
+      "datum": "12.01.2026.",
+      "vreme": "12:34 - 12:55",
+      "minuta": 21,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 252,
+      "slika": "/images/bike.png"
+    },
+    {
+      "id": "2",
+      "userId": 2,
+      "korisnik": "ana",
+      "bikeId": 8,
+      "datum": "12.01.2026.",
+      "vreme": "12:24 - 12:31",
+      "minuta": 7,
+      "tip": "Električni",
+      "cenaPoMinutu": 31,
+      "cena": 220,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "3",
+      "userId": 2,
+      "korisnik": "anjapantovic",
+      "bikeId": 1,
+      "datum": "13.01.2026.",
+      "vreme": "12:34 - 12:55",
+      "minuta": 21,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 252,
+      "slika": "/images/bike3.png"
+    },
+    {
+      "id": "4",
+      "userId": 1,
+      "korisnik": "anavranes",
+      "bikeId": 12,
+      "datum": "14.01.2026.",
+      "vreme": "12:34 - 12:55",
+      "minuta": 21,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 252,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "5",
+      "userId": 2,
+      "korisnik": "anaaa",
+      "bikeId": 3,
+      "datum": "15.01.2026.",
+      "vreme": "12:34 - 12:55",
+      "minuta": 21,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 252,
+      "slika": "/images/bike3.png"
+    },
+    {
+      "id": "6",
+      "userId": 1,
+      "korisnik": "anavranes",
+      "bikeId": 10,
+      "datum": "16.01.2026.",
+      "vreme": "12:34 - 12:55",
+      "minuta": 21,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 252,
+      "slika": "/images/bike.png"
+    },
+    {
+      "id": "7",
+      "userId": 1,
+      "korisnik": "anatest3",
+      "bikeId": 7,
+      "datum": "17.01.2026.",
+      "vreme": "12:34 - 12:55",
+      "minuta": 21,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 252,
+      "slika": "/images/bike.png"
+    },
+    {
+      "id": "8",
+      "userId": 1,
+      "korisnik": "anatest",
+      "bikeId": 5,
+      "datum": "18.01.2026.",
+      "vreme": "12:34 - 12:55",
+      "minuta": 21,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 252,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "920a",
+      "korisnik": "test",
+      "bikeId": 10,
+      "datum": "20.02.2026",
+      "vreme": "00:27",
+      "minuta": 1,
+      "cena": 13,
+      "pricePerMinute": 13,
+      "startedAt": 1771543621990,
+      "endedAt": 1771543624895
+    },
+    {
+      "id": "db97",
+      "userId": "4",
+      "korisnik": "test",
+      "bikeId": 11,
+      "datum": "20.02.2026.",
+      "vreme": "00:34 - 00:34",
+      "minuta": 1,
+      "tip": "Gradski",
+      "cenaPoMinutu": 21,
+      "cena": 21,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "9981",
+      "userId": "4",
+      "korisnik": "test",
+      "bikeId": 7,
+      "datum": "20.02.2026.",
+      "vreme": "00:50 - 00:51",
+      "minuta": 2,
+      "tip": "Hibridni",
+      "cenaPoMinutu": 14,
+      "cena": 28,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "95f5",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 7,
+      "datum": "20.02.2026.",
+      "vreme": "08:37 - 08:41",
+      "minuta": 4,
+      "tip": "Hibridni",
+      "cenaPoMinutu": 14,
+      "cena": 56,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "1759",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 7,
+      "datum": "20.02.2026.",
+      "vreme": "08:41 - 08:41",
+      "minuta": 1,
+      "tip": "Hibridni",
+      "cenaPoMinutu": 14,
+      "cena": 14,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "6c61",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 13,
+      "datum": "20.02.2026.",
+      "vreme": "08:53 - 08:54",
+      "minuta": 2,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 24,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "6402",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 7,
+      "datum": "20.02.2026.",
+      "vreme": "08:55 - 08:57",
+      "minuta": 2,
+      "tip": "Hibridni",
+      "cenaPoMinutu": 14,
+      "cena": 28,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "544c",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 10,
+      "datum": "20.02.2026.",
+      "vreme": "13:15 - 13:15",
+      "minuta": 1,
+      "tip": "Električni",
+      "cenaPoMinutu": 13,
+      "cena": 13,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "7f14",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 8,
+      "datum": "20.02.2026.",
+      "vreme": "15:15 - 15:15",
+      "minuta": 1,
+      "tip": "Električni",
+      "cenaPoMinutu": 12,
+      "cena": 12,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "6323",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 10,
+      "datum": "20.02.2026.",
+      "vreme": "15:27 - 15:28",
+      "minuta": 1,
+      "tip": "Električni",
+      "cenaPoMinutu": 13,
+      "cena": 13,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "5331",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 11,
+      "datum": "20.02.2026.",
+      "vreme": "15:59 - 16:00",
+      "minuta": 1,
+      "tip": "Gradski",
+      "cenaPoMinutu": 21,
+      "cena": 21,
+      "slika": "/images/bike2.png"
+    },
+    {
+      "id": "249f",
+      "userId": "2",
+      "korisnik": "ana",
+      "bikeId": 2,
+      "datum": "20.02.2026.",
+      "vreme": "16:04 - 16:05",
+      "minuta": 1,
+      "tip": "Gradski",
+      "cenaPoMinutu": 21,
+      "cena": 21,
+      "slika": "/images/bike2.png"
+    }
+  ],
+  "prijavljeni_problemi": [
+    {
+      "id": "1",
+      "datum": "18.01.2026.",
+      "korisnik": "test",
+      "userId": 4,
+      "bikeId": 1,
+      "opis": "pukla guma",
+      "fotografija": "/images/problem1.png",
+      "status": "Slanje bicikla na održavanje"
+    },
+    {
+      "id": "2",
+      "datum": "18.01.2026.",
+      "korisnik": "anaa",
+      "bikeId": 2,
+      "opis": "polomljeno prednje svetlo",
+      "fotografija": "/images/problem2.png",
+      "status": "Isključen iz sistema"
+    },
+    {
+      "id": "3",
+      "datum": "18.01.2026.",
+      "korisnik": "pera",
+      "bikeId": 3,
+      "opis": "pao lanac",
+      "fotografija": "/images/problem3.png",
+      "status": "Slanje bicikla na održavanje"
+    },
+    {
+      "id": "fe1e",
+      "datum": "20.02.2026.",
+      "korisnik": "ana",
+      "bikeId": 11,
+      "opis": "test",
+      "fotografija": "file:///var/mobile/Containers/Data/Application/B166980B-D785-4593-A708-92B25707D4DE/Library/Caches/ExponentExperienceData/@anonymous/moja-app-8b9034b6-757a-4838-a984-fea70d33bb6f/ImagePicker/F00DCBE6-0333-43BE-B139-8FB0B8AF9F03.png",
+      "status": "Slanje bicikla na održavanje",
+      "userId": "2"
+    },
+    {
+      "id": "4a6b",
+      "datum": "20.02.2026.",
+      "korisnik": "ana",
+      "bikeId": 1,
+      "opis": "ana test",
+      "fotografija": "/images/problem2.png",
+      "status": "Slanje bicikla na održavanje",
+      "userId": "2"
+    },
+    {
+      "id": "19d2",
+      "datum": "20.02.2026.",
+      "korisnik": "ana",
+      "bikeId": 12,
+      "opis": "test",
+      "fotografija": "/images/problem2.png",
+      "status": "Novo",
+      "userId": "2"
+    },
+    {
+      "id": "202e",
+      "datum": "20.02.2026.",
+      "korisnik": "ana",
+      "bikeId": 12,
+      "opis": "test",
+      "fotografija": "/images/problem2.png",
+      "status": "Novo",
+      "userId": "2"
+    },
+    {
+      "id": "5b56",
+      "datum": "20.02.2026.",
+      "korisnik": "ana",
+      "bikeId": 11,
+      "opis": "test",
+      "fotografija": "/images/problem2.png",
+      "status": "Novo",
+      "userId": "2"
+    },
+    {
+      "id": "ca1b",
+      "datum": "20.02.2026.",
+      "korisnik": "ana",
+      "bikeId": 13,
+      "opis": "test",
+      "fotografija": "/images/problem2.png",
+      "status": "Novo",
+      "userId": "2"
+    }
+  ],
+  "parkings": [
+    {
+      "id": "1",
+      "latitude": 44.8057,
+      "longitude": 20.471
+    },
+    {
+      "id": "2",
+      "latitude": 44.8045,
+      "longitude": 20.4668
+    },
+    {
+      "id": "3",
+      "latitude": 44.8006,
+      "longitude": 20.4686
+    },
+    {
+      "id": "4",
+      "latitude": 44.8069,
+      "longitude": 20.4716
+    },
+    {
+      "id": "5",
+      "latitude": 44.8095,
+      "longitude": 20.4678
+    }
+  ]
+}

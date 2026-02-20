@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,29 +9,198 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { AppHeader } from '../../../components/appHeader';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const BASE_URL = 'http://172.20.10.4:3000';
+
+type User = {
+  id?: number | string;
+  username?: string;
+  ime?: string;
+  prezime?: string;
+  telefon?: string;
+  email?: string;
+};
+
+const isValidEmail = (v: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+const cleanPhone = (v: string) => v.replace(/[^\d+]/g, '').trim();
 
 export default function ProfileIndexScreen() {
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const [username, setUsername] = useState('anavranes');
-  const [ime, setIme] = useState('Ana');
-  const [prezime, setPrezime] = useState('Vraneš');
-  const [telefon, setTelefon] = useState('+381 69 2494 483');
-  const [email, setEmail] = useState('a.vranesss@gmail.com');
+  // trenutni user (iz storage-a)
+  const [user, setUser] = useState<User | null>(null);
+
+  // form polja
+  const [username, setUsername] = useState('');
+  const [ime, setIme] = useState('');
+  const [prezime, setPrezime] = useState('');
+  const [telefon, setTelefon] = useState('');
+  const [email, setEmail] = useState('');
+
+  // da možemo da “vratimo” ako korisnik odustane
+  const initialSnapshotRef = useRef<User | null>(null);
+
+  const hydrateFromUser = (u: User) => {
+    setUsername(u.username ?? '');
+    setIme(u.ime ?? '');
+    setPrezime(u.prezime ?? '');
+    setTelefon(u.telefon ?? '');
+    setEmail(u.email ?? '');
+  };
+
+  const loadProfile = useCallback(async () => {
+    setLoading(true);
+    try {
+      const raw = await AsyncStorage.getItem('currentUser');
+      if (!raw) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      const u: User = JSON.parse(raw);
+      setUser(u);
+      hydrateFromUser(u);
+      initialSnapshotRef.current = u;
+    } catch (e) {
+      console.error('loadProfile error:', e);
+      Alert.alert('Greška', 'Ne mogu da učitam profil.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile])
+  );
+
+  const validate = () => {
+    if (!username.trim()) return 'Korisničko ime je obavezno.';
+    if (!ime.trim()) return 'Ime je obavezno.';
+    if (!prezime.trim()) return 'Prezime je obavezno.';
+    if (!email.trim()) return 'Email je obavezan.';
+    if (!isValidEmail(email)) return 'Email nije u dobrom formatu.';
+    if (telefon.trim() && cleanPhone(telefon).length < 8) return 'Telefon nije u dobrom formatu.';
+    return null;
+  };
+
+  const saveProfile = async () => {
+    const err = validate();
+    if (err) {
+      Alert.alert('Provera', err);
+      return;
+    }
+
+    if (!user?.id) {
+      // ako nema id, i dalje možemo samo da snimimo u AsyncStorage
+      const updatedLocal: User = {
+        ...(user ?? {}),
+        username: username.trim(),
+        ime: ime.trim(),
+        prezime: prezime.trim(),
+        telefon: telefon.trim(),
+        email: email.trim().toLowerCase(),
+      };
+      setUser(updatedLocal);
+      await AsyncStorage.setItem('currentUser', JSON.stringify(updatedLocal));
+      initialSnapshotRef.current = updatedLocal;
+      setIsEditing(false);
+      Alert.alert('Sačuvano', 'Profil je ažuriran.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload: User = {
+        username: username.trim(),
+        ime: ime.trim(),
+        prezime: prezime.trim(),
+        telefon: telefon.trim(),
+        email: email.trim().toLowerCase(),
+      };
+
+    
+      const res = await fetch(`${BASE_URL}/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Save failed: ${res.status} ${text}`);
+      }
+
+      const updatedFromServer = await res.json();
+
+      // ✅ update local storage da ostatak app-a koristi sveže podatke
+      const updatedLocal: User = { ...user, ...updatedFromServer };
+      setUser(updatedLocal);
+      await AsyncStorage.setItem('currentUser', JSON.stringify(updatedLocal));
+      initialSnapshotRef.current = updatedLocal;
+
+      setIsEditing(false);
+      Alert.alert('Sačuvano', 'Profil je ažuriran.');
+    } catch (e) {
+      console.error('saveProfile error:', e);
+      Alert.alert('Greška', 'Nisam uspela da sačuvam izmene.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const onPrimaryPress = () => {
     if (!isEditing) {
+      // ulazak u edit
+      initialSnapshotRef.current = user
+        ? { ...user }
+        : {
+            username,
+            ime,
+            prezime,
+            telefon,
+            email,
+          };
       setIsEditing(true);
       return;
     }
 
+    // save
+    saveProfile();
+  };
+
+  const onCancelEdit = () => {
+    const snap = initialSnapshotRef.current;
+    if (snap) {
+      hydrateFromUser(snap);
+      setUser(snap);
+    }
     setIsEditing(false);
   };
+
+  if (loading) {
+    return (
+      <View style={styles.screen}>
+        <AppHeader />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={{ marginTop: 10, color: '#fff', fontWeight: '700' }}>Učitavam profil…</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
@@ -48,8 +217,8 @@ export default function ProfileIndexScreen() {
 
           <Text style={styles.title}>Moj profil</Text>
 
-
-          <View style={styles.inputContainer}>
+          {/* Username */}
+          <View style={[styles.inputContainer, !isEditing && styles.locked]}>
             <Feather name="user" size={20} color="#111" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
@@ -59,9 +228,11 @@ export default function ProfileIndexScreen() {
               selectTextOnFocus={isEditing}
               placeholder="Korisničko ime"
               placeholderTextColor="#A9A9A9"
+              autoCapitalize="none"
             />
           </View>
 
+          {/* Promeni lozinku */}
           <Pressable
             style={({ pressed }) => [styles.inputContainer, styles.passwordRow, pressed && { opacity: 0.85 }]}
             onPress={() => router.push('/profile/change-password')}
@@ -71,7 +242,7 @@ export default function ProfileIndexScreen() {
           </Pressable>
 
           {/* Ime */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, !isEditing && styles.locked]}>
             <Feather name="user" size={20} color="#111" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
@@ -85,7 +256,7 @@ export default function ProfileIndexScreen() {
           </View>
 
           {/* Prezime */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, !isEditing && styles.locked]}>
             <Feather name="user" size={20} color="#111" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
@@ -99,7 +270,7 @@ export default function ProfileIndexScreen() {
           </View>
 
           {/* Telefon */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, !isEditing && styles.locked]}>
             <Feather name="phone" size={20} color="#111" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
@@ -114,7 +285,7 @@ export default function ProfileIndexScreen() {
           </View>
 
           {/* Email */}
-          <View style={styles.inputContainer}>
+          <View style={[styles.inputContainer, !isEditing && styles.locked]}>
             <Feather name="mail" size={20} color="#111" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
@@ -129,10 +300,23 @@ export default function ProfileIndexScreen() {
             />
           </View>
 
-          {/* Primary button */}
-          <TouchableOpacity style={styles.primaryBtn} onPress={onPrimaryPress} activeOpacity={0.9}>
-            <Text style={styles.primaryText}>{isEditing ? 'Sačuvaj' : 'Izmeni podatke'}</Text>
+          {/* Buttons */}
+          <TouchableOpacity
+            style={[styles.primaryBtn, saving && { opacity: 0.7 }]}
+            onPress={onPrimaryPress}
+            activeOpacity={0.9}
+            disabled={saving}
+          >
+            <Text style={styles.primaryText}>
+              {saving ? 'Čuvam…' : isEditing ? 'Sačuvaj' : 'Izmeni podatke'}
+            </Text>
           </TouchableOpacity>
+
+          {isEditing && (
+            <TouchableOpacity style={styles.secondaryBtn} onPress={onCancelEdit} activeOpacity={0.85} disabled={saving}>
+              <Text style={styles.secondaryText}>Otkaži</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -179,6 +363,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  locked: {
+    opacity: 0.92,
+  },
+
   inputIcon: { marginRight: 10 },
 
   input: {
@@ -214,6 +402,21 @@ const styles = StyleSheet.create({
 
   primaryText: {
     fontSize: 18,
+    fontWeight: '800',
+    color: '#111',
+  },
+
+  secondaryBtn: {
+    marginTop: 10,
+    width: 190,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(255,255,255,0.65)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryText: {
+    fontSize: 16,
     fontWeight: '800',
     color: '#111',
   },

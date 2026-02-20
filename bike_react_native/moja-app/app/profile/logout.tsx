@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 
 export default function LogoutScreen() {
   useEffect(() => {
-    router.replace('/'); // index.tsx (login / registracija)
+    router.replace('/');
   }, []);
 
   return (

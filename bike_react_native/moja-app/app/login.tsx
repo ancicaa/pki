@@ -15,6 +15,7 @@ import { loginUser } from '@/src/services/authService';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Entypo from '@expo/vector-icons/Entypo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -39,6 +40,7 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (result.success) {
+      await AsyncStorage.setItem('currentUser', JSON.stringify(result.user));
       router.replace('/(tabs)/homepage');
     } else {
       Alert.alert('Greška', result.message);

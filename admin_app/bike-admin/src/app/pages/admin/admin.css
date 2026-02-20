@@ -325,7 +325,7 @@
 
 .modal {
     width: 640px;
-    height: 700px;
+    height: 800px;
     max-width: 92vw;
     background: #d8d8d8;
     border-radius: 14px;
@@ -662,3 +662,212 @@ select.modal-select {
 .pass-save-btn:hover {
     background: #8fd98a;
 }
+
+.success-message {
+    background: #e6f7ec;
+    color: #1f7a3a;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: 500;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  /* ===== Dodaj ovo u admin.css ===== */
+
+/* Search bar */
+.search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    max-width: 360px;
+  }
+  
+  .search-bar mat-icon {
+    color: #999;
+    font-size: 20px;
+  }
+  
+  .search-input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 14px;
+    width: 100%;
+    color: #333;
+  }
+  
+  /* Sortable header */
+  th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  
+  th.sortable:hover {
+    background: #f0f0f0;
+  }
+  
+  /* No results row */
+  .no-results {
+    text-align: center;
+    color: #999;
+    padding: 24px 0;
+    font-style: italic;
+  }
+  
+  /* Status edit inline (select + confirm + cancel) */
+  .status-edit-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .pill-confirm {
+    background: #4caf50 !important;
+    color: #fff !important;
+    padding: 2px 8px !important;
+    min-width: unset !important;
+  }
+  
+  .pill-cancel {
+    background: #e53935 !important;
+    color: #fff !important;
+    padding: 2px 8px !important;
+    min-width: unset !important;
+  }
+  
+  .pill-confirm:hover { background: #388e3c !important; }
+  .pill-cancel:hover  { background: #b71c1c !important; }
+
+  /* Paginacija */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin-top: 16px;
+    padding-bottom: 8px;
+  }
+  
+  .page-btn {
+    min-width: 32px;
+    height: 32px;
+    border: 1px solid #e0e0e0;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: all 0.15s;
+  }
+  
+  .page-btn:hover:not(:disabled) {
+    background: #f0f0f0;
+  }
+  
+  .page-btn.active {
+    background: #1976d2;
+    color: #fff;
+    border-color: #1976d2;
+  }
+  
+  .page-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: #2e7d32;
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    animation: slideIn 0.3s ease;
+    z-index: 9999;
+  }
+  
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .qr-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #1976d2;
+    background: #e3f2fd;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+  }
+  
+  .qr-info mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .pill:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .modal-wide {
+    max-width: 600px;
+    width: 90%;
+  }
+  
+  .bike-rentals-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-height: 650px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  
+  .bike-rental-card {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 12px;
+    background: #fafafa;
+  }
+  
+  .bike-rental-img {
+    width: 90px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  
+  .bike-rental-info p {
+    margin: 2px 0;
+    font-size: 13px;
+    color: #333;
+  }
+  
+  .loading-text {
+    text-align: center;
+    color: #888;
+    padding: 20px 0;
+  }

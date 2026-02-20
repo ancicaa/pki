@@ -4,12 +4,12 @@ export type BikeInfo = {
   address: string;
   bikeType: 'Električni' | 'Klasični';
   pricePerMinute: number;
-  battery: number; // procenat 0–100
+  battery: number; 
 };
 
 export type ParkingInfo = {
   address: string;
-  distanceMeters: number; // npr 150
+  distanceMeters: number; 
 };
 
 export type MapPin = {
@@ -23,7 +23,6 @@ export type MapPin = {
 };
 
 export const MOCK_PINS: MapPin[] = [
-  // 🔴 BIKE PINOVI
   {
     id: 'b1',
     type: 'bike',

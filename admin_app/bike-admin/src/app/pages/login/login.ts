@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth.service.js';
+import { ChangeDetectorRef } from '@angular/core';
 
 @Component({
   selector: 'app-login',
@@ -10,37 +12,44 @@ import { CommonModule } from '@angular/common';
   styleUrl: './login.css',
 })
 export class Login {
-
   username: string = '';
   password: string = '';
   errorMessage: string = '';
+  isLoading = false;
 
-
-  private users = [
-    { username: 'admin', password: 'admin123', role: 'admin' },
-    { username: 'ana', password: '1234', role: 'admin' },
-  ];
-
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService, private cdr: ChangeDetectorRef) {}
 
   goToHome() {
-    // Proveri hardkodovane
-    const hardcoded = this.users.find(
-      u => u.username === this.username && u.password === this.password
-    );
-  
-    // Proveri registrovane iz sessionStorage
-    const registered = JSON.parse(sessionStorage.getItem('users') || '[]');
-    const found = hardcoded || registered.find(
-      (u: any) => u.username === this.username && u.password === this.password
-    );
-  
-    if (found) {
-      this.errorMessage = '';
-      sessionStorage.setItem('currentUser', JSON.stringify(found));
-      this.router.navigate(['/admin']);
-    } else {
-      this.errorMessage = 'Pogrešno korisničko ime ili lozinka.';
+    this.errorMessage = '';
+
+    const username = this.username.trim();
+    const password = this.password;
+
+    if (!username || !password) {
+      this.errorMessage = 'Unesite korisničko ime i lozinku.';
+      return;
     }
+
+    this.isLoading = true;
+
+    this.auth.login(username, password).subscribe({
+      next: (user) => {
+        this.isLoading = false;
+        console.log('user:', user);
+
+        if (!user) {
+          this.errorMessage = 'Pogrešno korisničko ime ili lozinka.';
+          this.cdr.detectChanges();
+        return;
+        }
+
+        this.auth.setCurrentUser(user);
+        this.router.navigate(['/admin']);
+      },
+      error: () => {
+        this.isLoading = false;
+        this.errorMessage = 'Greška pri konekciji na server';
+      }
+    });
   }
 }
